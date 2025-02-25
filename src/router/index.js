@@ -132,7 +132,7 @@ export const asyncRoutes = [
     name: 'Icons',
     meta: {
       title: '封禁管理',
-      icon: 'el-icon-banned',
+      icon: 'el-icon-s-platform',
       roles: ['admin']
     },
     children: [
@@ -140,13 +140,13 @@ export const asyncRoutes = [
         path: 'index',
         component: () => import('@/views/icons/index'),
         name: '己封禁IP',
-        meta: { title: '己封禁IP', icon: 'icon', noCache: true }
+        meta: { title: '己封禁IP', noCache: true }
       },
       {
         path: 'svg-icons',
         component: () => import('@/views/icons/svg-icons'),
         name: '封禁IP变更日志',
-        meta: { title: '封禁IP变更日志', icon: 'icon', noCache: true }
+        meta: { title: '封禁IP变更日志', noCache: true }
       }
     ]
   },
@@ -157,7 +157,7 @@ export const asyncRoutes = [
     name: 'Icons',
     meta: {
       title: '白名单管理',
-      icon: 'el-icon-banned',
+      icon: 'el-icon-info',
       roles: ['admin']
     },
     children: [
@@ -165,13 +165,13 @@ export const asyncRoutes = [
         path: 'index',
         component: () => import('@/views/icons/index'),
         name: '白名单',
-        meta: { title: '白名单', icon: 'icon', noCache: true }
+        meta: { title: '白名单', noCache: true }
       },
       {
         path: 'svg-icons',
         component: () => import('@/views/icons/svg-icons'),
         name: '白名单变更日志',
-        meta: { title: '白名单变更日志', icon: 'icon', noCache: true }
+        meta: { title: '白名单变更日志', noCache: true }
       }
     ]
   },
@@ -182,7 +182,7 @@ export const asyncRoutes = [
     name: 'Icons',
     meta: {
       title: '设备管理',
-      icon: 'el-icon-banned',
+      icon: 'el-icon-s-management',
       roles: ['admin']
     },
     children: [
@@ -190,13 +190,13 @@ export const asyncRoutes = [
         path: 'index',
         component: () => import('@/views/icons/index'),
         name: '告警设备',
-        meta: { title: '告警设备', icon: 'icon', noCache: true }
+        meta: { title: '告警设备', noCache: true }
       },
       {
         path: 'svg-icons',
         component: () => import('@/views/icons/svg-icons'),
         name: '封禁设备',
-        meta: { title: '封禁设备', icon: 'icon', noCache: true }
+        meta: { title: '封禁设备', noCache: true }
       }
     ]
   },
@@ -215,25 +215,25 @@ export const asyncRoutes = [
         path: 'index',
         component: () => import('@/views/icons/index'),
         name: '个人中心',
-        meta: { title: '个人中心', icon: 'icon', noCache: true }
+        meta: { title: '个人中心', noCache: true }
       },
       {
         path: 'svg-icons',
         component: () => import('@/views/icons/svg-icons'),
         name: '全局配置',
-        meta: { title: '全局配置', icon: 'icon', noCache: true }
+        meta: { title: '全局配置', noCache: true }
       },
       {
         path: 'svg-icons',
         component: () => import('@/views/icons/svg-icons'),
         name: '通知管理',
-        meta: { title: '通知管理', icon: 'icon', noCache: true }
+        meta: { title: '通知管理', noCache: true }
       },
       {
         path: 'svg-icons',
         component: () => import('@/views/icons/svg-icons'),
         name: '证书管理',
-        meta: { title: '证书管理', icon: 'icon', noCache: true }
+        meta: { title: '证书管理', noCache: true }
       }
     ]
   },
