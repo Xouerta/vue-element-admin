@@ -176,7 +176,7 @@ export const asyncRoutes = [
     ]
   },
   {
-    path: '/icon',
+    path: '/devices',
     component: Layout,
     alwaysShow: true,
     name: 'Icons',
@@ -188,7 +188,7 @@ export const asyncRoutes = [
     children: [
       {
         path: 'index',
-        component: () => import('@/views/icons/index'),
+        component: () => import('@/views/devices-management/alarm-device/index.vue'),
         name: '告警设备',
         meta: { title: '告警设备', noCache: true }
       },
