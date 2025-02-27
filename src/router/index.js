@@ -194,7 +194,7 @@ export const asyncRoutes = [
       },
       {
         path: 'svg-icons',
-        component: () => import('@/views/icons/svg-icons'),
+        component: () => import('@/views/devices-management/banned-device/index.vue'),
         name: '封禁设备',
         meta: { title: '封禁设备', noCache: true }
       }
