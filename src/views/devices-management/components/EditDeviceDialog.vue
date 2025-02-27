@@ -55,6 +55,10 @@ export default {
       type: Boolean,
       required: true
     },
+    mode: {
+      type: Boolean,
+      default: true
+    },
     deviceData: {
       type: Object,
       required: true,

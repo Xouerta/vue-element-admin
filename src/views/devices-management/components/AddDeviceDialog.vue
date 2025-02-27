@@ -1,6 +1,6 @@
 <template>
   <el-dialog
-    title="添加封禁设备"
+    :title="`添加${ mode ? '告警' : '封禁'}设备`"
     :visible.sync="visible"
     width="500px"
     :close-on-click-modal="false"
@@ -43,6 +43,10 @@ export default {
     visible: {
       type: Boolean,
       default: false
+    },
+    mode: {
+      type: Boolean,
+      default: true
     }
   },
   data() {
