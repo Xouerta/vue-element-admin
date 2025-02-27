@@ -11,23 +11,27 @@
           placeholder="设备名称"
           size="small"
           style="width: 200px"
-        >
-        </el-input>
-        <el-button type="primary" size="small" @click="handleSearch">搜索</el-button>
+        />
+        <el-button type="primary" size="small" @click="handleSearch" style="margin-left: 2px">搜索</el-button>
       </div>
       <div class="right-buttons">
-        <el-tooltip content="刷新" placement="top" :enterable="false">
+        <el-tooltip content="批量启用" placement="top" :enterable="false">
           <el-button
-            icon="el-icon-refresh"
+            icon="el-icon-check"
             circle
             size="small"
-            @click="fetchTableData"
+            @click="handleBatchEnable"
           ></el-button>
         </el-tooltip>
-        <el-tooltip content="设置" placement="top" :enterable="false">
-          <el-button icon="el-icon-setting" circle size="small"></el-button>
+        <el-tooltip content="批量禁用" placement="top" :enterable="false">
+          <el-button
+            icon="el-icon-close"
+            circle
+            size="small"
+            @click="handleBatchDisable"
+          ></el-button>
         </el-tooltip>
-        <el-tooltip content="删除" placement="top" :enterable="false">
+        <el-tooltip content="批量删除" placement="top" :enterable="false">
           <el-button
             icon="el-icon-delete"
             circle
@@ -57,9 +61,14 @@
         </el-table-column>
         <el-table-column label="状态" prop="status">
           <template slot-scope="scope">
-            <el-tag size="small" type="success" v-if="scope.row.status === '应用'">
-              {{ scope.row.status }}
-            </el-tag>
+            <el-button
+              size="mini"
+              plain
+              :type="scope.row.status === 0 ? 'success' : 'danger'"
+              @click="handleStatusChange(scope.row)"
+            >
+              {{ scope.row.status === 0 ? '启用' : '禁用' }}
+            </el-button>
           </template>
         </el-table-column>
         <el-table-column label="备注" prop="remark"></el-table-column>
@@ -94,7 +103,7 @@
         :current-page="currentPage"
         :page-size="pageSize"
         :total="total"
-        :page-sizes="[50]"
+        :page-sizes="[10, 20, 50]"
         layout="prev, pager, next"
         @current-change="handleCurrentChange"
         @size-change="handleSizeChange"
@@ -104,7 +113,7 @@
       </el-pagination>
       <el-select v-model="pageSize" size="small" style="width: 110px">
         <el-option
-          v-for="size in [50]"
+          v-for="size in [10, 20, 50]"
           :key="size"
           :label="`${size}条/页`"
           :value="size"
@@ -136,8 +145,17 @@ export default {
   },
   computed: {
     ...mapState({
-      tableData: state => state.devices.tableData
+      tableData: state => state.devices.tableData,
+      storeTotal: state => state.devices.total
     })
+  },
+  watch: {
+    storeTotal: {
+      handler(newVal) {
+        this.total = newVal
+      },
+      immediate: true
+    }
   },
   data() {
     return {
@@ -151,7 +169,7 @@ export default {
     }
   },
   created() {
-    this.fetchTableData()
+    this.fetchData()
   },
   methods: {
     ...mapActions({
@@ -160,6 +178,19 @@ export default {
       deleteDevice: 'devices/deleteDevice',
       addDevice: 'devices/addDevice'
     }),
+
+    async fetchData() {
+      try {
+        await this.fetchTableData({
+          page: this.currentPage,
+          pageSize: this.pageSize,
+          query: this.searchQuery
+        })
+      } catch (error) {
+        console.error('获取数据失败:', error)
+        this.$message.error('获取数据失败')
+      }
+    },
 
     // 处理添加按钮点击
     handleAddClick() {
@@ -239,20 +270,84 @@ export default {
     // 处理搜索
     handleSearch() {
       this.currentPage = 1
-      this.fetchTableData()
+      this.fetchData()
     },
 
     // 处理页码改变
     handleCurrentChange(val) {
       this.currentPage = val
-      this.fetchTableData()
+      this.fetchData()
     },
 
     // 处理每页条数改变
     handleSizeChange(val) {
       this.pageSize = val
       this.currentPage = 1
-      this.fetchTableData()
+      this.fetchData()
+    },
+
+    // 修改状态切换处理方法
+    handleStatusChange(row) {
+      // 切换状态值
+      const newStatus = row.status === 0 ? 1 : 0
+      const updatedRow = { ...row, status: newStatus }
+
+      this.updateDevice(updatedRow).then(() => {
+        row.status = newStatus // 更新成功后修改状态
+        this.$message.success('状态更新成功')
+      }).catch(() => {
+        this.$message.error('状态更新失败')
+      })
+    },
+
+    // 处理批量启用
+    handleBatchEnable() {
+      if (this.selectedRows.length === 0) {
+        this.$message.warning('请选择要启用的设备')
+        return
+      }
+      this.$confirm(`确认启用选中的 ${this.selectedRows.length} 个设备?`, '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        Promise.all(
+          this.selectedRows.map(row => {
+            const updatedRow = { ...row, status: 0 }
+            return this.updateDevice(updatedRow)
+          })
+        ).then(() => {
+          this.$message.success('批量启用成功')
+          this.fetchData() // 刷新数据
+        }).catch(() => {
+          this.$message.error('批量启用失败')
+        })
+      }).catch(() => {})
+    },
+
+    // 处理批量禁用
+    handleBatchDisable() {
+      if (this.selectedRows.length === 0) {
+        this.$message.warning('请选择要禁用的设备')
+        return
+      }
+      this.$confirm(`确认禁用选中的 ${this.selectedRows.length} 个设备?`, '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        Promise.all(
+          this.selectedRows.map(row => {
+            const updatedRow = { ...row, status: 1 }
+            return this.updateDevice(updatedRow)
+          })
+        ).then(() => {
+          this.$message.success('批量禁用成功')
+          this.fetchData() // 刷新数据
+        }).catch(() => {
+          this.$message.error('批量禁用失败')
+        })
+      }).catch(() => {})
     }
   }
 }
@@ -291,13 +386,13 @@ export default {
 }
 
 .pagination-container {
-  flex: none;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
   display: flex;
-  justify-content: flex-end;
   align-items: center;
-  gap: 15px;
-  padding: 10px 0;
-  border-top: 1px solid #EBEEF5;
+  background-color: #fff;
+  overflow: hidden;
 }
 
 .pagination-container span {
