@@ -2,17 +2,36 @@
   <div class="device-container">
     <!-- 顶部操作区 -->
     <div class="operation-area">
-      <el-button type="primary" size="small" @click="handleAddClick">
-        + 添加告警设备
+      <el-button
+        type="primary"
+        size="small"
+        plain
+        @click="handleAddClick"
+        style="padding: 8px 20px;"
+      >
+        <i class="el-icon-plus" style="margin-right: 4px;"></i>
+        添加告警设备
       </el-button>
       <div class="search-area">
         <el-input
           v-model="searchQuery"
           placeholder="设备名称"
           size="small"
-          style="width: 200px"
-        />
-        <el-button type="primary" size="small" @click="handleSearch" style="margin-left: 2px">搜索</el-button>
+          style="width: 200px; background-color: #f5f7fa;"
+        >
+          <template slot="prepend">
+            <i class="el-icon-search" style="color: #909399;"></i>
+          </template>
+        </el-input>
+        <el-button
+          type="primary"
+          plain
+          size="small"
+          @click="handleSearch"
+          style="margin-left: 8px;"
+        >
+          搜索
+        </el-button>
       </div>
       <div class="right-buttons">
         <el-tooltip content="批量启用" placement="top" :enterable="false">
@@ -123,30 +142,42 @@
       <el-button size="small" plain>前往</el-button>
     </div>
 
-    <!-- 添加/编辑设备对话框 -->
+    <!-- 分开定义两个对话框 -->
     <edit-device-dialog
-      v-if="dialogVisible"
-      :visible.sync="dialogVisible"
+      v-if="editDialogVisible"
+      :visible.sync="editDialogVisible"
       :device-data="currentDevice"
-      @submit="handleDialogSubmit"
-      @close="handleDialogClose"
+      @submit="handleEditSubmit"
+      @close="handleEditClose"
+    />
+    <add-device-dialog
+      v-if="addDialogVisible"
+      :visible.sync="addDialogVisible"
+      @submit="handleAddSubmit"
+      @close="handleAddClose"
     />
   </div>
 </template>
 
+/*
+ * 设备管理页面
+ * 启用 0 禁用 1
+*/
 <script>
 import {mapActions, mapState} from 'vuex'
 import EditDeviceDialog from '@/views/devices-management/components/EditDeviceDialog.vue'
+import AddDeviceDialog from "@/views/devices-management/components/AddDeviceDialog.vue";
 
 export default {
   name: 'DeviceManagement',
   components: {
+    AddDeviceDialog,
     EditDeviceDialog
   },
   computed: {
     ...mapState({
-      tableData: state => state.devices.tableData,
-      storeTotal: state => state.devices.total
+      tableData: state => state.alarmDevices.tableData,
+      storeTotal: state => state.alarmDevices.total
     })
   },
   watch: {
@@ -160,7 +191,8 @@ export default {
   data() {
     return {
       searchQuery: '',
-      dialogVisible: false,
+      editDialogVisible: false,  // 编辑对话框
+      addDialogVisible: false,   // 添加对话框
       currentDevice: {},
       selectedRows: [],
       currentPage: 1,
@@ -173,10 +205,10 @@ export default {
   },
   methods: {
     ...mapActions({
-      fetchTableData: 'devices/fetchTableData',
-      updateDevice: 'devices/updateDevice',
-      deleteDevice: 'devices/deleteDevice',
-      addDevice: 'devices/addDevice'
+      fetchTableData: 'alarmDevices/fetchTableData',
+      updateDevice: 'alarmDevices/updateDevice',
+      deleteDevice: 'alarmDevices/deleteDevice',
+      addDevice: 'alarmDevices/addDevice'
     }),
 
     async fetchData() {
@@ -195,36 +227,42 @@ export default {
     // 处理添加按钮点击
     handleAddClick() {
       this.currentDevice = {}
-      this.dialogVisible = true
+      this.addDialogVisible = true
     },
 
     // 处理编辑按钮点击
     handleEdit(row) {
       this.currentDevice = {...row}
-      this.dialogVisible = true
+      this.editDialogVisible = true
     },
 
-    // 处理对话框提交
-    handleDialogSubmit(formData) {
-      if (this.currentDevice.deviceName) {
-        // 编辑模式
-        this.updateDevice(formData).then(() => {
-          console.log(this.tableData)
-          this.$message.success('编辑成功')
-          this.dialogVisible = false
-        })
-      } else {
-        // 添加模式
-        this.addDevice(formData).then(() => {
-          this.$message.success('添加成功')
-          this.dialogVisible = false
-        })
-      }
+    // 处理添加对话框提交
+    handleAddSubmit(formData) {
+      this.addDevice(formData).then(() => {
+        this.$message.success('添加成功')
+        this.addDialogVisible = false
+        this.fetchData() // 刷新数据
+      })
     },
 
-    // 处理对话框关闭
-    handleDialogClose() {
-      this.dialogVisible = false
+    // 处理编辑对话框提交
+    handleEditSubmit(formData) {
+      this.updateDevice(formData).then(() => {
+        this.$message.success('编辑成功')
+        this.editDialogVisible = false
+        this.fetchData() // 刷新数据
+      })
+    },
+
+    // 处理添加对话框关闭
+    handleAddClose() {
+      this.addDialogVisible = false
+      this.currentDevice = {}
+    },
+
+    // 处理编辑对话框关闭
+    handleEditClose() {
+      this.editDialogVisible = false
       this.currentDevice = {}
     },
 
@@ -257,8 +295,7 @@ export default {
           this.selectedRows.map(row => this.deleteDevice(row.deviceName))
         ).then(() => {
           this.$message.success('批量删除成功')
-        })
-      }).catch(() => {
+        }).catch(() => {})
       })
     },
 
@@ -425,5 +462,19 @@ export default {
   }
 }
 
+.search-area :deep(.el-input__inner) {
+  background-color: #f5f7fa;
+  border: none;
+  padding-left: 30px;
+}
+
+.search-area :deep(.el-input__prefix) {
+  left: 10px;
+}
+
+.search-area :deep(.el-input) {
+  border-radius: 4px;
+  overflow: hidden;
+}
 
 </style>
