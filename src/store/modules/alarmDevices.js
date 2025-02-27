@@ -28,20 +28,20 @@ const actions = {
     // const response = await api.getDeviceList()
     commit('SET_TABLE_DATA', {
       list: [{
-        deviceName: '长亭雷池',
+        deviceName: '长亭雷池1',
         key: 'sk-*****rwS',
         connection: '空闲',
         status: '应用',
         remark: 'sk-TnBYAIOJj84ERrwS'
       },
         {
-          deviceName: '长亭雷池',
+          deviceName: '长亭雷池2',
           key: 'sk-*****rwS',
           connection: '空闲',
           status: '应用',
           remark: 'sk-TnBYAIOJj84ERrwS'
         }, {
-          deviceName: '长亭雷池',
+          deviceName: '长亭雷池3',
           key: 'sk-*****rwS',
           connection: '空闲',
           status: '应用',
