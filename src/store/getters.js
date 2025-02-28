@@ -13,6 +13,7 @@ const getters = {
   errorLogs: state => state.errorLog.logs,
   alarmDevices: state => state.alarmDevices.tableData,
   bannedDevices: state => state.bannedDevices.tableData,
-  whiteLists: state => state.whiteLists.tableData
+  whiteLists: state => state.whiteLists.tableData,
+  whiteListLogs: state => state.whiteListLogs.tableData,
 }
 export default getters
