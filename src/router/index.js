@@ -169,7 +169,7 @@ export const asyncRoutes = [
       },
       {
         path: 'whiteListLogs',
-        component: () => import('@/views/icons/svg-icons'),
+        component: () => import('@/views/whitelist-management/whitelist-logs/index.vue'),
         name: '白名单变更日志',
         meta: { title: '白名单变更日志', noCache: true }
       }
