@@ -151,7 +151,7 @@ export const asyncRoutes = [
     ]
   },
   {
-    path: '/icon',
+    path: '/whiteList',
     component: Layout,
     alwaysShow: true,
     name: 'Icons',
@@ -162,13 +162,13 @@ export const asyncRoutes = [
     },
     children: [
       {
-        path: 'index',
-        component: () => import('@/views/icons/index'),
+        path: 'whiteList',
+        component: () => import('@/views/whitelist-management/whitelist/index.vue'),
         name: '白名单',
         meta: { title: '白名单', noCache: true }
       },
       {
-        path: 'svg-icons',
+        path: 'whiteListLogs',
         component: () => import('@/views/icons/svg-icons'),
         name: '白名单变更日志',
         meta: { title: '白名单变更日志', noCache: true }
@@ -187,13 +187,13 @@ export const asyncRoutes = [
     },
     children: [
       {
-        path: 'index',
+        path: 'alarm',
         component: () => import('@/views/devices-management/alarm-device/index.vue'),
         name: '告警设备',
         meta: { title: '告警设备', noCache: true }
       },
       {
-        path: 'svg-icons',
+        path: 'banned',
         component: () => import('@/views/devices-management/banned-device/index.vue'),
         name: '封禁设备',
         meta: { title: '封禁设备', noCache: true }
