@@ -64,6 +64,7 @@
     <!-- 表格区域 -->
     <div class="table-wrapper">
       <el-table
+        border
         :data="tableData"
         style="width: 100%"
         @selection-change="handleSelectionChange"
@@ -394,7 +395,7 @@ export default {
 
 <style scoped>
 .device-container {
-  height: 100vh;
+  height: max-content;
   display: flex;
   flex-direction: column;
   background-color: #fff;

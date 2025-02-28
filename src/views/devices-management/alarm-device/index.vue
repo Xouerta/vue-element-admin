@@ -64,6 +64,7 @@
     <!-- 表格区域 -->
     <div class="table-wrapper">
       <el-table
+        border
         :data="tableData"
         style="width: 100%"
         @selection-change="handleSelectionChange"
@@ -392,7 +393,7 @@ export default {
 
 <style scoped>
 .device-container {
-  height: 100vh;
+  height: max-content;
   display: flex;
   flex-direction: column;
   background-color: #fff;
@@ -460,21 +461,6 @@ export default {
     height: 28px;
     line-height: 28px;
   }
-}
-
-.search-area :deep(.el-input__inner) {
-  background-color: #f5f7fa;
-  border: none;
-  padding-left: 30px;
-}
-
-.search-area :deep(.el-input__prefix) {
-  left: 10px;
-}
-
-.search-area :deep(.el-input) {
-  border-radius: 4px;
-  overflow: hidden;
 }
 
 </style>
