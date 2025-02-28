@@ -74,8 +74,10 @@
     <!-- 表格区域 -->
     <div class="table-wrapper">
       <el-table
+        border
         :data="tableData"
         style="width: 100%"
+        height="70vh"
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55"></el-table-column>
@@ -386,7 +388,6 @@ export default {
         try {
           await this.deleteWhitelist(row.ip)
           this.$message.success('删除成功')
-          // 如果当前页没有数据了，则跳转到上一页
           if (this.tableData.length === 0 && this.currentPage > 1) {
             this.currentPage--
           }
@@ -514,8 +515,7 @@ export default {
 
             const formData = {
               ...this.addForm,
-              ip: formattedIPs,
-              // expireTime 会在 store 中被转换为时间戳
+              ip: formattedIPs
             }
 
             await this.addWhitelist(formData)
@@ -557,7 +557,6 @@ export default {
 <style scoped>
 .whitelist-container {
   height: 100%;
-  display: flex;
   flex-direction: column;
   background-color: #fff;
   padding: 20px;
@@ -569,7 +568,7 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   position: relative;
 }
 
