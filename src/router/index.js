@@ -87,7 +87,7 @@ export const asyncRoutes = [
   {
     path: '/permission',
     component: Layout,
-    redirect: '/permission/page',
+    redirect: '/permission/WorkFlow.vue',
     alwaysShow: true, // will always show the root menu
     name: '仪表盘',
     meta: {
@@ -97,8 +97,8 @@ export const asyncRoutes = [
     },
     children: [
       {
-        path: 'page',
-        component: () => import('@/views/permission/page'),
+        path: 'workbanch',
+        component: () => import('@/views/permission/WorkFlow.vue'),
         name: 'PagePermission',
         meta: {
           title: '工作台',
@@ -106,17 +106,16 @@ export const asyncRoutes = [
         }
       },
       {
-        path: 'directive',
-        component: () => import('@/views/permission/directive'),
+        path: 'map',
+        component: () => import('@/views/permission/MapView.vue'),
         name: 'DirectivePermission',
         meta: {
           title: '态势大屏'
-          // if do not set roles, means: this page does not require permission
         }
       },
       {
         path: 'role',
-        component: () => import('@/views/permission/role'),
+        component: () => import('@/views/permission/RealTime.vue'),
         name: 'RolePermission',
         meta: {
           title: '实时处置流水',
@@ -126,10 +125,10 @@ export const asyncRoutes = [
     ]
   },
   {
-    path: '/icon',
+    path: '/Bannip',
     component: Layout,
     alwaysShow: true,
-    name: 'Icons',
+    name: 'Bannip',
     meta: {
       title: '封禁管理',
       icon: 'el-icon-s-platform',
@@ -138,13 +137,13 @@ export const asyncRoutes = [
     children: [
       {
         path: 'index',
-        component: () => import('@/views/icons/index'),
+        component: () => import('@/views/Bannedip/Ipban'),
         name: '己封禁IP',
         meta: { title: '己封禁IP', noCache: true }
       },
       {
         path: 'svg-icons',
-        component: () => import('@/views/icons/svg-icons'),
+        component: () => import('@/views/Bannedip/Banlog'),
         name: '封禁IP变更日志',
         meta: { title: '封禁IP变更日志', noCache: true }
       }
@@ -201,10 +200,10 @@ export const asyncRoutes = [
     ]
   },
   {
-    path: '/icon',
+    path: '/setting',
     component: Layout,
     alwaysShow: true,
-    name: 'Icons',
+    name: 'setting',
     meta: {
       title: '系统设置',
       icon: 'el-icon-setting',
@@ -212,26 +211,26 @@ export const asyncRoutes = [
     },
     children: [
       {
-        path: 'index',
-        component: () => import('@/views/icons/index'),
+        path: '{personal',
+        component: () => import('@/views/Settings/Personalset'),
         name: '个人中心',
         meta: { title: '个人中心', noCache: true }
       },
       {
-        path: 'svg-icons',
-        component: () => import('@/views/icons/svg-icons'),
+        path: 'all',
+        component: () => import('@/views/Settings/Allset'),
         name: '全局配置',
         meta: { title: '全局配置', noCache: true }
       },
       {
-        path: 'svg-icons',
-        component: () => import('@/views/icons/svg-icons'),
+        path: 'notice',
+        component: () => import('@/views/Settings/Noticeset'),
         name: '通知管理',
         meta: { title: '通知管理', noCache: true }
       },
       {
-        path: 'svg-icons',
-        component: () => import('@/views/icons/svg-icons'),
+        path: 'books',
+        component: () => import('@/views/Settings/Bookset'),
         name: '证书管理',
         meta: { title: '证书管理', noCache: true }
       }
