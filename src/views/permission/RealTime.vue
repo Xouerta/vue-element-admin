@@ -1,59 +1,92 @@
 <template>
   <div class="alert-list">
-    <!-- 搜索过滤区域 -->
-    <div class="filter-section">
-      <el-form :inline="true" :model="filterForm">
-        <el-form-item label="时间范围">
-          <el-date-picker
-            v-model="filterForm.timeRange"
-            type="datetimerange"
-            range-separator="-"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间"
-          />
-        </el-form-item>
-        <el-form-item label="IP">
-          <el-input v-model="filterForm.ip" placeholder="请输入IP" />
-        </el-form-item>
-        <el-form-item label="地理位置">
-          <el-input v-model="filterForm.location" placeholder="请输入地理位置" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">搜索</el-button>
-          <el-button @click="resetForm">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </div>
-
-    <!-- 告警列表表格 -->
+    <!-- 列表区域 -->
     <el-table
       :data="tableData"
       style="width: 100%"
-      border
-      stripe
+      v-loading="loading"
     >
-      <el-table-column prop="alertTime" label="告警时间" width="180" />
-      <el-table-column prop="ip" label="IP" width="150" />
-      <el-table-column prop="location" label="地理位置" width="150" />
-      <el-table-column prop="alertDevice" label="告警设备" width="120" />
-      <el-table-column prop="alertType" label="告警详情" width="120">
-        <template #default="scope">
-          <el-tag size="small">{{ scope.row.alertType }}</el-tag>
+      <!-- 告警时间 -->
+      <el-table-column label="告警时间" width="180">
+        <template slot-scope="scope">
+          <div class="time-cell">
+            <div class="label">告警时间</div>
+            <div class="value">{{ scope.row.alertTime }}</div>
+          </div>
         </template>
       </el-table-column>
-      <el-table-column prop="targetAsset" label="被攻击资产" width="120">
-        <template #default="scope">
-          <el-tag type="warning" size="small">{{ scope.row.targetAsset }}</el-tag>
+
+      <!-- IP -->
+      <el-table-column label="IP" width="180">
+        <template slot-scope="scope">
+          <div class="ip-cell">
+            <div class="label">IP</div>
+            <div class="value">{{ scope.row.ip }}</div>
+          </div>
         </template>
       </el-table-column>
-      <el-table-column prop="blockStatus" label="封禁状态" width="120">
-        <template #default="scope">
-          <el-tag type="success" size="small">{{ scope.row.blockStatus }}</el-tag>
+
+      <!-- 地理位置 -->
+      <el-table-column label="地理位置" width="180">
+        <template slot-scope="scope">
+          <div class="location-cell">
+            <div class="label">地理位置</div>
+            <div class="value">{{ scope.row.location }}</div>
+          </div>
         </template>
       </el-table-column>
-      <el-table-column prop="reason" label="判定原因" width="120">
-        <template #default="scope">
-          <el-tag type="info" size="small">{{ scope.row.reason }}</el-tag>
+
+      <!-- 告警设备 -->
+      <el-table-column label="告警设备" width="120">
+        <template slot-scope="scope">
+          <div class="device-cell">
+            <div class="label">告警设备</div>
+            <div class="value">{{ scope.row.device }}</div>
+          </div>
+        </template>
+      </el-table-column>
+
+      <!-- 告警详情 -->
+      <el-table-column label="告警详情" width="150">
+        <template slot-scope="scope">
+          <div class="detail-cell">
+            <div class="label">告警详情</div>
+            <div class="value">
+              <el-tag size="small" type="warning">{{ scope.row.alertDetail }}</el-tag>
+            </div>
+          </div>
+        </template>
+      </el-table-column>
+
+      <!-- 被攻击资产 -->
+      <el-table-column label="被攻击资产" width="150">
+        <template slot-scope="scope">
+          <div class="asset-cell">
+            <div class="label">被攻击资产</div>
+            <div class="value">{{ scope.row.targetAsset }}</div>
+          </div>
+        </template>
+      </el-table-column>
+
+      <!-- 封禁状态 -->
+      <el-table-column label="封禁状态" width="120">
+        <template slot-scope="scope">
+          <div class="status-cell">
+            <div class="label">封禁状态</div>
+            <div class="value">
+              <el-tag size="small" type="success">{{ scope.row.banStatus }}</el-tag>
+            </div>
+          </div>
+        </template>
+      </el-table-column>
+
+      <!-- 判定原因 -->
+      <el-table-column label="判定原因" width="120">
+        <template slot-scope="scope">
+          <div class="reason-cell">
+            <div class="label">判定原因</div>
+            <div class="value">{{ scope.row.reason }}</div>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -61,10 +94,10 @@
     <!-- 分页器 -->
     <div class="pagination">
       <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
+        :current-page.sync="currentPage"
+        :page-size.sync="pageSize"
         :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
+        layout="total, sizes, prev, pager, next"
         :total="total"
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"
@@ -73,66 +106,50 @@
   </div>
 </template>
 
-<script setup>
-import { ref, reactive } from 'vue'
-
-// 过滤表单数据
-const filterForm = reactive({
-  timeRange: [],
-  ip: '',
-  location: ''
-})
-
-// 表格数据
-const tableData = ref([
-  {
-    alertTime: '2025-02-20 14:48:23',
-    ip: '213.55.85.202',
-    location: '埃塞俄比亚/哈尔格尔',
-    alertDevice: 'hfish',
-    alertType: 'SSH暴力',
-    targetAsset: '蜜罐',
-    blockStatus: '已封禁',
-    reason: '已封禁'
+<script>
+export default {
+  data() {
+    return {
+      tableData: [],
+      loading: false,
+      total: 0,
+      currentPage: 1,
+      pageSize: 20
+    }
   },
-  {
-    alertTime: '2025-02-20 14:48:23',
-    ip: '61.15.25.138',
-    location: '香港',
-    alertDevice: 'hfish',
-    alertType: 'SSH暴力',
-    targetAsset: '蜜罐',
-    blockStatus: '已封禁',
-    reason: '已封禁'
+  methods: {
+    async getList() {
+      this.loading = true
+      try {
+        // 这里替换为实际的API调用
+        const response = await fetch('/api/alerts', {
+          params: {
+            page: this.currentPage,
+            pageSize: this.pageSize
+          }
+        })
+        const data = await response.json()
+
+        this.tableData = data.list
+        this.total = data.total
+      } catch (error) {
+        this.$message.error('获取数据失败')
+      } finally {
+        this.loading = false
+      }
+    },
+    handleSizeChange(val) {
+      this.pageSize = val
+      this.getList()
+    },
+    handleCurrentChange(val) {
+      this.currentPage = val
+      this.getList()
+    }
   },
-  // ... 更多数据
-])
-
-// 分页相关
-const currentPage = ref(1)
-const pageSize = ref(10)
-const total = ref(100)
-
-// 搜索方法
-const handleSearch = () => {
-  // 实现搜索逻辑
-  console.log('搜索条件：', filterForm)
-}
-
-// 重置表单
-const resetForm = () => {
-  filterForm.timeRange = []
-  filterForm.ip = ''
-  filterForm.location = ''
-}
-
-// 分页方法
-const handleSizeChange = (val) => {
-  console.log(`每页 ${val} 条`)
-}
-
-const handleCurrentChange = (val) => {
-  console.log(`当前页: ${val}`)
+  mounted() {
+    this.getList()
+  }
 }
 </script>
 
@@ -141,25 +158,55 @@ const handleCurrentChange = (val) => {
   padding: 20px;
 }
 
-.filter-section {
-  background: #fff;
-  padding: 20px;
-  border-radius: 4px;
-  margin-bottom: 20px;
+/* 单元格样式 */
+.label {
+  color: #909399;
+  font-size: 12px;
+  margin-bottom: 4px;
 }
 
+.value {
+  color: #303133;
+  font-size: 14px;
+}
+
+/* 分页器样式 */
 .pagination {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
 }
 
-:deep(.el-table) {
-  margin-top: 20px;
+/* 表格样式定制 */
+.el-table {
+  --el-table-border-color: #EBEEF5;
+  --el-table-header-bg-color: #F5F7FA;
 }
 
-:deep(.el-tag) {
-  width: 100%;
-  text-align: center;
+.el-table__row {
+  background-color: transparent;
+}
+
+.el-table__row:hover {
+  background-color: #F5F7FA;
+}
+
+.el-table td {
+  padding: 12px 0;
+}
+
+/* 标签样式 */
+.el-tag {
+  border-radius: 2px;
+}
+
+/* 分页器样式 */
+.el-pagination {
+  --el-pagination-button-bg-color: transparent;
+}
+
+/* 加载状态样式 */
+.el-loading-mask {
+  background-color: rgba(255, 255, 255, 0.8);
 }
 </style>

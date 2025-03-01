@@ -137,7 +137,7 @@ export const asyncRoutes = [
     children: [
       {
         path: 'index',
-        component: () => import('@/views/Banned/Ipban'),
+        component: () => import('@/views/Banned/ipban'),
         name: '己封禁IP',
         meta: { title: '己封禁IP', noCache: true }
       },

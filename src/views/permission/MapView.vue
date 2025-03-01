@@ -1,141 +1,271 @@
 <template>
-  <div class="dashboard">
+  <div class="attack-dashboard">
+    <!-- 顶部时间选择器 -->
     <div class="header">
-      <h1>全球攻击态势大屏</h1>
-      <el-date-picker
-        v-model="dateRange"
-        type="datetimerange"
-        :shortcuts="shortcuts"
-        range-separator="-"
-        start-placeholder="开始时间"
-        end-placeholder="结束时间"
-      />
+      <div class="title">全球攻击态势大屏</div>
+      <div class="time-picker">
+        <el-date-picker
+          v-model="timeRange"
+          type="datetimerange"
+          range-separator="-"
+          start-placeholder="开始时间"
+          end-placeholder="结束时间"
+          :default-time="defaultTime"
+          @change="handleTimeChange"
+        />
+        <el-button-group>
+          <el-button icon="Refresh" circle @click="refreshData"/>
+          <el-button icon="FullScreen" circle @click="toggleFullScreen"/>
+        </el-button-group>
+      </div>
     </div>
 
-    <el-row :gutter="20">
-      <!-- 左侧统计图表 -->
-      <el-col :span="6">
-        <div class="chart-container">
+    <div class="main-content">
+      <!-- 左侧图表 -->
+      <div class="left-charts">
+        <div class="chart-box">
           <h3>攻击地区排名</h3>
-          <canvas ref="regionChart"></canvas>
+          <div ref="regionChart" class="chart"></div>
         </div>
-        <div class="chart-container">
+        <div class="chart-box">
           <h3>被攻击资产排名</h3>
-          <canvas ref="assetChart"></canvas>
+          <div ref="assetChart" class="chart"></div>
         </div>
-      </el-col>
+        <div class="chart-box">
+          <h3>近24小时封禁情况</h3>
+          <div ref="hourlyChart" class="chart"></div>
+        </div>
+      </div>
 
       <!-- 中间地图 -->
-      <el-col :span="12">
-        <div class="map-container">
-          <canvas ref="worldMap"></canvas>
-        </div>
-      </el-col>
+      <div class="center-map">
+        <div ref="worldMap" class="world-map"></div>
+      </div>
 
       <!-- 右侧实时流水 -->
-      <el-col :span="6">
-        <div class="realtime-log">
-          <h3>实时处置流水</h3>
-          <div class="log-list">
-            <div v-for="(log, index) in logList" :key="index" class="log-item">
-              <div class="log-time">{{ log.time }}</div>
-              <div class="log-ip">{{ log.ip }}</div>
-              <div class="log-detail">{{ log.detail }}</div>
-              <div class="log-status">{{ log.status }}</div>
+      <div class="right-panel">
+        <h3>实时处置流水</h3>
+        <div class="log-list">
+          <div v-for="(log, index) in realtimeLogs" :key="index" class="log-item">
+            <div class="log-row">
+              <span class="label">告警详情</span>
+              <span class="value">{{ log.alertType }}</span>
+            </div>
+            <div class="log-row">
+              <span class="label">封禁状态</span>
+              <span class="value">{{ log.status }}</span>
+            </div>
+            <div class="log-row">
+              <span class="label">时间</span>
+              <span class="value">{{ log.time }}</span>
+            </div>
+            <div class="log-row">
+              <span class="label">IP</span>
+              <span class="value">{{ log.ip }}</span>
+            </div>
+            <div class="log-row">
+              <span class="label">告警详情</span>
+              <span class="value">{{ log.alertDetail }}</span>
             </div>
           </div>
         </div>
-      </el-col>
-    </el-row>
-
-    <!-- 底部趋势图 -->
-    <div class="trend-chart">
-      <h3>近24小时封禁情况</h3>
-      <canvas ref="trendChart"></canvas>
+      </div>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue'
-import Chart from 'chart.js/auto'
+<script>
+import * as echarts from 'echarts'
+import 'echarts/map/js/world'
 
-const dateRange = ref([new Date('2025-02-24 20:02:48'), new Date('2025-02-25 20:02:48')])
-const regionChart = ref(null)
-const assetChart = ref(null)
-const trendChart = ref(null)
-
-const logList = ref([
-  {
-    time: '2025-02-25 17:50:14',
-    ip: '211.196.31.2(韩国)',
-    detail: 'SSH暴力',
-    status: '已封禁'
+export default {
+  data() {
+    return {
+      timeRange: [
+        new Date().getTime() - 3 * 24 * 60 * 60 * 1000,
+        new Date()
+      ],
+      defaultTime: [
+        new Date(2000, 1, 1, 0, 0, 0),
+        new Date(2000, 1, 1, 23, 59, 59)
+      ],
+      regionChart: null,
+      assetChart: null,
+      hourlyChart: null,
+      worldMapChart: null,
+      realtimeLogs: [
+        {
+          alertType: 'SSH暴破',
+          status: '截过',
+          time: '2025-02-26 21:29:00',
+          ip: '103.245.26.5(印度尼西亚)',
+          alertDetail: 'TCP端口监听'
+        }
+        // ... 更多日志数据
+      ]
+    }
   },
-  {
-    time: '2025-02-25 17:51:28',
-    ip: '202.4.196.160(香港)',
-    detail: 'SSH暴力',
-    status: '已封禁'
+  methods: {
+    initRegionChart() {
+      this.regionChart = echarts.init(this.$refs.regionChart)
+      const option = {
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'value'
+        },
+        yAxis: {
+          type: 'category',
+          data: ['中国', '美国', '印度', '俄罗斯']
+        },
+        series: [{
+          type: 'bar',
+          data: [320, 302, 301, 334],
+          itemStyle: {
+            color: '#409EFF'
+          }
+        }]
+      }
+      this.regionChart.setOption(option)
+    },
+    initAssetChart() {
+      this.assetChart = echarts.init(this.$refs.assetChart)
+      const option = {
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'value'
+        },
+        yAxis: {
+          type: 'category',
+          data: ['蜜罐', '防火墙', 'Web服务器', '数据库']
+        },
+        series: [{
+          type: 'bar',
+          data: [120, 200, 150, 80],
+          itemStyle: {
+            color: '#67C23A'
+          }
+        }]
+      }
+      this.assetChart.setOption(option)
+    },
+    initHourlyChart() {
+      this.hourlyChart = echarts.init(this.$refs.hourlyChart)
+      const option = {
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          data: Array.from({ length: 24 }, (_, i) => `${i}:00`)
+        },
+        yAxis: {
+          type: 'value'
+        },
+        series: [{
+          data: Array(24).fill(0).map(() => Math.round(Math.random() * 10)),
+          type: 'line',
+          smooth: true,
+          areaStyle: {
+            opacity: 0.3
+          },
+          itemStyle: {
+            color: '#E6A23C'
+          }
+        }]
+      }
+      this.hourlyChart.setOption(option)
+    },
+    initWorldMap() {
+      this.worldMapChart = echarts.init(this.$refs.worldMap)
+      const option = {
+        backgroundColor: 'transparent',
+        geo: {
+          map: 'world',
+          roam: true,
+          itemStyle: {
+            areaColor: '#323c48',
+            borderColor: '#404a59'
+          },
+          emphasis: {
+            itemStyle: {
+              areaColor: '#2a333d'
+            }
+          }
+        },
+        series: [{
+          type: 'scatter',
+          coordinateSystem: 'geo',
+          data: [],
+          symbolSize: 12,
+          itemStyle: {
+            color: '#F56C6C'
+          },
+          emphasis: {
+            scale: true
+          }
+        }]
+      }
+      this.worldMapChart.setOption(option)
+    },
+    handleTimeChange() {
+      // 实现时间变化后的数据更新逻辑
+    },
+    refreshData() {
+      // 实现数据刷新逻辑
+    },
+    toggleFullScreen() {
+      const element = document.documentElement
+      if (!document.fullscreenElement) {
+        element.requestFullscreen()
+      } else {
+        document.exitFullscreen()
+      }
+    },
+    handleResize() {
+      this.regionChart?.resize()
+      this.assetChart?.resize()
+      this.hourlyChart?.resize()
+      this.worldMapChart?.resize()
+    }
+  },
+  mounted() {
+    this.initRegionChart()
+    this.initAssetChart()
+    this.initHourlyChart()
+    this.initWorldMap()
+
+    window.addEventListener('resize', this.handleResize)
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.handleResize)
+    this.regionChart?.dispose()
+    this.assetChart?.dispose()
+    this.hourlyChart?.dispose()
+    this.worldMapChart?.dispose()
   }
-])
-
-onMounted(() => {
-  // 初始化攻击地区排名图表
-  new Chart(regionChart.value, {
-    type: 'bar',
-    data: {
-      labels: ['新加坡/新加坡', '中国', '韩国', '伊拉克/巴格达', '中国/深圳', '俄罗斯/莫斯科', '韩国/水原市', '泰古尔', '圣基茨和尼维斯', '香港'],
-      datasets: [{
-        data: [2, 2, 2, 1, 1, 1, 1, 1, 1, 1],
-        backgroundColor: '#409EFF'
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      plugins: {
-        legend: {
-          display: false
-        }
-      }
-    }
-  })
-
-  // 初始化24小时趋势图
-  new Chart(trendChart.value, {
-    type: 'line',
-    data: {
-      labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
-      datasets: [{
-        data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 14, 4, 1, 0],
-        fill: true,
-        backgroundColor: 'rgba(64, 158, 255, 0.2)',
-        borderColor: '#409EFF'
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          display: false
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true
-        }
-      }
-    }
-  })
-})
+}
 </script>
 
 <style scoped>
-.dashboard {
+.attack-dashboard {
+  height: 100vh;
+  background: #1b1b1b;
+  color: #fff;
   padding: 20px;
-  background: #f5f7fa;
-  min-height: 100vh;
+  box-sizing: border-box;
 }
 
 .header {
@@ -145,66 +275,97 @@ onMounted(() => {
   margin-bottom: 20px;
 }
 
-.header h1 {
+.title {
   font-size: 24px;
-  color: #333;
+  font-weight: bold;
 }
 
-.chart-container {
-  background: #fff;
-  padding: 20px;
-  border-radius: 4px;
-  margin-bottom: 20px;
+.time-picker {
+  display: flex;
+  gap: 10px;
 }
 
-.map-container {
-  background: #fff;
-  padding: 20px;
-  border-radius: 4px;
-  height: 600px;
+.main-content {
+  display: flex;
+  height: calc(100% - 80px);
+  gap: 20px;
 }
 
-.realtime-log {
-  background: #fff;
-  padding: 20px;
+.left-charts {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.chart-box {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 15px;
   border-radius: 4px;
-  height: 600px;
+}
+
+.chart {
+  height: calc(100% - 30px);
+}
+
+.center-map {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.world-map {
+  height: 100%;
+}
+
+.right-panel {
+  width: 300px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 4px;
   overflow-y: auto;
 }
 
+.log-list {
+  margin-top: 10px;
+}
+
 .log-item {
-  padding: 10px 0;
-  border-bottom: 1px solid #eee;
-}
-
-.log-time {
-  color: #666;
-  font-size: 12px;
-}
-
-.log-ip {
-  color: #333;
-  margin: 5px 0;
-}
-
-.log-detail {
-  color: #409EFF;
-}
-
-.log-status {
-  color: #67C23A;
-}
-
-.trend-chart {
-  background: #fff;
-  padding: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  margin-bottom: 10px;
   border-radius: 4px;
-  margin-top: 20px;
+}
+
+.log-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.label {
+  color: #909399;
+}
+
+.value {
+  color: #E6A23C;
 }
 
 h3 {
-  margin-bottom: 20px;
-  color: #333;
+  margin: 0;
+  margin-bottom: 15px;
   font-size: 16px;
+  color: #909399;
+}
+
+:deep(.el-date-editor) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+:deep(.el-button) {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
 }
 </style>

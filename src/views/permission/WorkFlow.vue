@@ -1,165 +1,356 @@
 <template>
-  <div class="alert-list">
-    <!-- 搜索过滤区域 -->
-    <div class="filter-section">
-      <el-form :inline="true" :model="filterForm">
-        <el-form-item label="时间范围">
-          <el-date-picker
-            v-model="filterForm.timeRange"
-            type="datetimerange"
-            range-separator="-"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间"
-          />
-        </el-form-item>
-        <el-form-item label="IP">
-          <el-input v-model="filterForm.ip" placeholder="请输入IP" />
-        </el-form-item>
-        <el-form-item label="地理位置">
-          <el-input v-model="filterForm.location" placeholder="请输入地理位置" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">搜索</el-button>
-          <el-button @click="resetForm">重置</el-button>
-        </el-form-item>
-      </el-form>
+  <div class="dashboard">
+    <!-- 欢迎信息 -->
+    <div class="welcome">
+      欢迎回来！funnet
     </div>
 
-    <!-- 告警列表表格 -->
-    <el-table
-      :data="tableData"
-      style="width: 100%"
-      border
-      stripe
-    >
-      <el-table-column prop="alertTime" label="告警时间" width="180" />
-      <el-table-column prop="ip" label="IP" width="150" />
-      <el-table-column prop="location" label="地理位置" width="150" />
-      <el-table-column prop="alertDevice" label="告警设备" width="120" />
-      <el-table-column prop="alertType" label="告警详情" width="120">
-        <template #default="scope">
-          <el-tag size="small">{{ scope.row.alertType }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="targetAsset" label="被攻击资产" width="120">
-        <template #default="scope">
-          <el-tag type="warning" size="small">{{ scope.row.targetAsset }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="blockStatus" label="封禁状态" width="120">
-        <template #default="scope">
-          <el-tag type="success" size="small">{{ scope.row.blockStatus }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="reason" label="判定原因" width="120">
-        <template #default="scope">
-          <el-tag type="info" size="small">{{ scope.row.reason }}</el-tag>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- 统计卡片 -->
+    <div class="stat-cards">
+      <el-row :gutter="20">
+        <el-col :span="6">
+          <el-card class="stat-card">
+            <div class="stat-title">今日封禁</div>
+            <div class="stat-value warning">0</div>
+          </el-card>
+        </el-col>
+        <el-col :span="6">
+          <el-card class="stat-card">
+            <div class="stat-title">总封禁</div>
+            <div class="stat-value info">64</div>
+          </el-card>
+        </el-col>
+        <el-col :span="6">
+          <el-card class="stat-card">
+            <div class="stat-title">白名单</div>
+            <div class="stat-value primary">0</div>
+          </el-card>
+        </el-col>
+        <el-col :span="6">
+          <el-card class="stat-card">
+            <div class="stat-title">设备</div>
+            <div class="stat-value success">3</div>
+          </el-card>
+        </el-col>
+      </el-row>
+    </div>
 
-    <!-- 分页器 -->
-    <div class="pagination">
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="total"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
+    <!-- 时间选择和导出按钮 -->
+    <div class="time-filter">
+      <el-date-picker
+        v-model="timeRange"
+        type="datetimerange"
+        range-separator="-"
+        start-placeholder="开始时间"
+        end-placeholder="结束时间"
       />
+      <el-button type="primary">
+        <i class="el-icon-download"></i>
+        导出数据报告
+      </el-button>
+    </div>
+
+    <!-- 图表区域 -->
+    <el-row :gutter="20">
+      <el-col :span="16">
+        <!-- 被攻击地区排名 -->
+        <div class="chart-container">
+          <h3>被攻击地区排名</h3>
+          <div ref="areaChartRef" style="height: 300px"></div>
+        </div>
+      </el-col>
+      <el-col :span="8">
+        <!-- 实时处置流水 -->
+        <div class="log-container">
+          <h3>实时处置流水</h3>
+          <div class="log-list">
+            <div v-for="(log, index) in logList" :key="index" class="log-item">
+              <div class="log-time">{{ log.time }}</div>
+              <div class="log-ip">IP：{{ log.ip }}</div>
+              <div class="log-type">{{ log.type }}</div>
+              <div class="log-status">{{ log.status }}</div>
+            </div>
+          </div>
+        </div>
+      </el-col>
+    </el-row>
+
+    <!-- 趋势图 -->
+    <div class="trend-charts">
+      <div class="chart-container">
+        <h3>近24小时封禁情况</h3>
+        <div ref="hourlyChartRef" style="height: 200px"></div>
+      </div>
+
+      <div class="chart-container">
+        <h3>近7日封禁情况</h3>
+        <div ref="dailyChartRef" style="height: 200px"></div>
+      </div>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, reactive } from 'vue'
+<script>
+import * as echarts from 'echarts'
 
-// 过滤表单数据
-const filterForm = reactive({
-  timeRange: [],
-  ip: '',
-  location: ''
-})
-
-// 表格数据
-const tableData = ref([
-  {
-    alertTime: '2025-02-20 14:48:23',
-    ip: '213.55.85.202',
-    location: '埃塞俄比亚/哈尔格尔',
-    alertDevice: 'hfish',
-    alertType: 'SSH暴力',
-    targetAsset: '蜜罐',
-    blockStatus: '已封禁',
-    reason: '已封禁'
+export default {
+  data() {
+    return {
+      timeRange: [],
+      areaChartRef: null,
+      hourlyChartRef: null,
+      dailyChartRef: null,
+      logList: [
+        {
+          time: '2025-02-26 21:32:04',
+          ip: '117.157.83.252',
+          type: 'SSH暴力',
+          status: '已封禁'
+        },
+        {
+          time: '2025-02-26 21:32:04',
+          ip: '214.62.177.198',
+          type: 'SSH暴力',
+          status: '已封禁'
+        }
+        // ... 更多日志数据
+      ]
+    }
   },
-  {
-    alertTime: '2025-02-20 14:48:23',
-    ip: '61.15.25.138',
-    location: '香港',
-    alertDevice: 'hfish',
-    alertType: 'SSH暴力',
-    targetAsset: '蜜罐',
-    blockStatus: '已封禁',
-    reason: '已封禁'
+  methods: {
+    initAreaChart() {
+      this.areaChartRef = echarts.init(this.$refs.areaChartRef)
+      const option = {
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'value',
+          boundaryGap: [0, 0.01]
+        },
+        yAxis: {
+          type: 'category',
+          data: ['北京', '上海', '广州', '深圳']
+        },
+        series: [
+          {
+            type: 'bar',
+            data: [4, 3, 2, 1],
+            itemStyle: {
+              color: '#409EFF'
+            }
+          }
+        ]
+      }
+      this.areaChartRef.setOption(option)
+    },
+    initHourlyChart() {
+      this.hourlyChartRef = echarts.init(this.$refs.hourlyChartRef)
+      const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`)
+      const option = {
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          data: hours
+        },
+        yAxis: {
+          type: 'value'
+        },
+        series: [
+          {
+            data: Array.from({ length: 24 }, () => Math.floor(Math.random() * 10)),
+            type: 'line',
+            smooth: true,
+            areaStyle: {
+              opacity: 0.3
+            },
+            itemStyle: {
+              color: '#409EFF'
+            }
+          }
+        ]
+      }
+      this.hourlyChartRef.setOption(option)
+    },
+    initDailyChart() {
+      this.dailyChartRef = echarts.init(this.$refs.dailyChartRef)
+      const days = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date()
+        date.setDate(date.getDate() - i)
+        return date.toLocaleDateString()
+      }).reverse()
+
+      const option = {
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          data: days
+        },
+        yAxis: {
+          type: 'value'
+        },
+        series: [
+          {
+            data: Array.from({ length: 7 }, () => Math.floor(Math.random() * 20)),
+            type: 'line',
+            smooth: true,
+            areaStyle: {
+              opacity: 0.3
+            },
+            itemStyle: {
+              color: '#67C23A'
+            }
+          }
+        ]
+      }
+      this.dailyChartRef.setOption(option)
+    },
+    handleResize() {
+      this.areaChartRef?.resize()
+      this.hourlyChartRef?.resize()
+      this.dailyChartRef?.resize()
+    }
   },
-  // ... 更多数据
-])
+  mounted() {
+    this.initAreaChart()
+    this.initHourlyChart()
+    this.initDailyChart()
 
-// 分页相关
-const currentPage = ref(1)
-const pageSize = ref(10)
-const total = ref(100)
-
-// 搜索方法
-const handleSearch = () => {
-  // 实现搜索逻辑
-  console.log('搜索条件：', filterForm)
-}
-
-// 重置表单
-const resetForm = () => {
-  filterForm.timeRange = []
-  filterForm.ip = ''
-  filterForm.location = ''
-}
-
-// 分页方法
-const handleSizeChange = (val) => {
-  console.log(`每页 ${val} 条`)
-}
-
-const handleCurrentChange = (val) => {
-  console.log(`当前页: ${val}`)
+    // 监听窗口大小变化，重绘图表
+    window.addEventListener('resize', this.handleResize)
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.handleResize)
+    this.areaChartRef?.dispose()
+    this.hourlyChartRef?.dispose()
+    this.dailyChartRef?.dispose()
+  }
 }
 </script>
 
 <style scoped>
-.alert-list {
+.dashboard {
   padding: 20px;
 }
 
-.filter-section {
+.welcome {
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+.stat-cards {
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  text-align: center;
+  padding: 20px;
+}
+
+.stat-title {
+  font-size: 14px;
+  color: #606266;
+}
+
+.stat-value {
+  font-size: 24px;
+  margin-top: 10px;
+}
+
+.stat-value.warning {
+  color: #E6A23C;
+}
+
+.stat-value.info {
+  color: #409EFF;
+}
+
+.stat-value.primary {
+  color: #8E44AD;
+}
+
+.stat-value.success {
+  color: #67C23A;
+}
+
+.time-filter {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.chart-container {
   background: #fff;
   padding: 20px;
   border-radius: 4px;
   margin-bottom: 20px;
 }
 
-.pagination {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
+.chart-container h3 {
+  margin-bottom: 20px;
+  font-size: 16px;
+  color: #303133;
 }
 
-:deep(.el-table) {
-  margin-top: 20px;
+.log-container {
+  background: #fff;
+  padding: 20px;
+  border-radius: 4px;
+  height: 300px;
 }
 
-:deep(.el-tag) {
-  width: 100%;
-  text-align: center;
+.log-container h3 {
+  margin-bottom: 20px;
+  font-size: 16px;
+  color: #303133;
+}
+
+.log-list {
+  height: calc(100% - 40px);
+  overflow-y: auto;
+}
+
+.log-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.log-time {
+  font-size: 12px;
+  color: #909399;
+}
+
+.log-ip {
+  margin: 5px 0;
+  color: #303133;
+}
+
+.log-type {
+  color: #409EFF;
+}
+
+.log-status {
+  color: #67C23A;
+}
+
+:deep(.el-input__wrapper) {
+  border-radius: 2px;
+}
+
+:deep(.el-button) {
+  border-radius: 2px;
 }
 </style>
