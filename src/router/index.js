@@ -137,13 +137,13 @@ export const asyncRoutes = [
     children: [
       {
         path: 'index',
-        component: () => import('@/views/Bannedip/Ipban'),
+        component: () => import('@/views/Banned/Ipban'),
         name: '己封禁IP',
         meta: { title: '己封禁IP', noCache: true }
       },
       {
         path: 'svg-icons',
-        component: () => import('@/views/Bannedip/Banlog'),
+        component: () => import('@/views/Banned/Banlog'),
         name: '封禁IP变更日志',
         meta: { title: '封禁IP变更日志', noCache: true }
       }
@@ -212,25 +212,25 @@ export const asyncRoutes = [
     children: [
       {
         path: '{personal',
-        component: () => import('@/views/Settings/Personalset'),
+        component: () => import('@/views/Setting/Personalset'),
         name: '个人中心',
         meta: { title: '个人中心', noCache: true }
       },
       {
         path: 'all',
-        component: () => import('@/views/Settings/Allset'),
+        component: () => import('@/views/Setting/Allset'),
         name: '全局配置',
         meta: { title: '全局配置', noCache: true }
       },
       {
         path: 'notice',
-        component: () => import('@/views/Settings/Noticeset'),
+        component: () => import('@/views/Setting/Noticeset'),
         name: '通知管理',
         meta: { title: '通知管理', noCache: true }
       },
       {
         path: 'books',
-        component: () => import('@/views/Settings/Bookset'),
+        component: () => import('@/views/Setting/Bookset'),
         name: '证书管理',
         meta: { title: '证书管理', noCache: true }
       }
