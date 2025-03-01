@@ -1,3 +1,99 @@
+<template>
+  <div class="security-settings">
+    <el-row :gutter="20">
+      <!-- 修改密码表单 -->
+      <el-col :span="12">
+        <el-card class="password-card">
+          <div slot="header" class="card-header">
+            <span>修改密码</span>
+          </div>
+
+          <el-form
+            ref="passwordFormRef"
+            :model="passwordForm"
+            :rules="passwordRules"
+            label-width="100px"
+          >
+            <el-form-item label="原密码" prop="oldPassword">
+              <el-input
+                v-model="passwordForm.oldPassword"
+                type="password"
+                show-password
+                placeholder="请输入原密码"
+              />
+            </el-form-item>
+
+            <el-form-item label="新密码" prop="newPassword">
+              <el-input
+                v-model="passwordForm.newPassword"
+                type="password"
+                show-password
+                placeholder="请输入新密码"
+              />
+            </el-form-item>
+
+            <el-form-item label="确认密码" prop="confirmPassword">
+              <el-input
+                v-model="passwordForm.confirmPassword"
+                type="password"
+                show-password
+                placeholder="请再次输入新密码"
+              />
+            </el-form-item>
+
+            <el-form-item>
+              <el-button type="primary" @click="handleChangePassword">
+                确认修改
+              </el-button>
+            </el-form-item>
+          </el-form>
+        </el-card>
+      </el-col>
+
+      <!-- TOTP配置表单 -->
+      <el-col :span="12">
+        <el-card class="totp-card">
+          <div slot="header" class="card-header">
+            <span>TOTP配置</span>
+          </div>
+
+          <el-form
+            ref="totpFormRef"
+            :model="totpForm"
+            :rules="totpRules"
+            label-width="100px"
+          >
+            <div class="qr-code" v-if="totpQrCode">
+              <img :src="totpQrCode" alt="TOTP QR Code">
+              <p class="secret-key">密钥：{{ totpSecretKey }}</p>
+            </div>
+
+            <el-form-item label="验证码" prop="code">
+              <el-input
+                v-model="totpForm.code"
+                placeholder="请输入6位验证码"
+                maxlength="6"
+              >
+                <template slot="append">
+                  <el-button @click="handleGetTotp" :disabled="!!totpQrCode">
+                    {{ totpQrCode ? '重新获取' : '获取' }}
+                  </el-button>
+                </template>
+              </el-input>
+            </el-form-item>
+
+            <el-form-item>
+              <el-button type="primary" @click="handleBindTotp">
+                确认绑定
+              </el-button>
+            </el-form-item>
+          </el-form>
+        </el-card>
+      </el-col>
+    </el-row>
+  </div>
+</template>
+
 <script>
 import { Message } from 'element-ui'
 import axios from 'axios'
