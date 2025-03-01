@@ -1,3 +1,85 @@
+<template>
+  <div class="ban-settings">
+    <el-card class="setting-card">
+      <div slot="header" class="card-header">
+        <span>封禁设置</span>
+      </div>
+
+      <el-form
+        :model="banForm"
+        ref="banFormRef"
+        label-width="120px"
+      >
+        <!-- 封禁状态开关 -->
+        <el-form-item label="封禁状态">
+          <el-switch
+            v-model="banForm.banEnabled"
+            :active-text="banForm.banEnabled ? '开启' : '关闭'"
+            @change="handleBanStatusChange"
+          />
+        </el-form-item>
+
+        <!-- 默认封禁时长 -->
+        <el-form-item label="默认封禁时长">
+          <el-input-number
+            v-model="banForm.banDuration"
+            :min="1"
+            :max="999999"
+            :disabled="!banForm.banEnabled"
+            @change="handleDurationChange"
+          />
+          <span class="unit-text">分钟</span>
+        </el-form-item>
+
+        <!-- 保存按钮 -->
+        <el-form-item>
+          <el-button
+            type="primary"
+            @click="handleSaveSettings"
+            :loading="saving"
+          >
+            保存设置
+          </el-button>
+        </el-form-item>
+      </el-form>
+
+      <!-- 保存成功提示 -->
+      <el-alert
+        v-if="showSuccess"
+        title="设置已更新"
+        type="success"
+        :closable="false"
+        show-icon
+        class="success-alert"
+      />
+    </el-card>
+
+    <!-- 当前设置显示 -->
+    <el-card class="current-settings">
+      <div slot="header" class="card-header">
+        <span>当前设置</span>
+      </div>
+
+      <div class="settings-info">
+        <div class="info-item">
+          <span class="label">封禁状态：</span>
+          <el-tag :type="banForm.banEnabled ? 'success' : 'info'">
+            {{ banForm.banEnabled ? '已开启' : '已关闭' }}
+          </el-tag>
+        </div>
+        <div class="info-item">
+          <span class="label">默认封禁时长：</span>
+          <span class="value">{{ banForm.banDuration }} 分钟</span>
+        </div>
+        <div class="info-item">
+          <span class="label">最后更新时间：</span>
+          <span class="value">{{ lastUpdateTime }}</span>
+        </div>
+      </div>
+    </el-card>
+  </div>
+</template>
+
 <script>
 import { Message } from 'element-ui'
 import axios from 'axios'
