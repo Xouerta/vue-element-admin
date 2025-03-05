@@ -134,10 +134,9 @@
   </div>
 </template>
 
-
 <script>
 import { Message, MessageBox } from 'element-ui'
-import axios from 'axios'
+import { settingApi } from '@/api/NoticeSetting'
 
 export default {
   data() {
@@ -149,6 +148,7 @@ export default {
       dialogVisible: false,
       dialogType: 'add',
       noticeForm: {
+        id: '',
         type: '',
         target: '',
         status: '启用'
@@ -172,7 +172,7 @@ export default {
     async getNoticeList() {
       this.loading = true
       try {
-        const response = await axios.get('/noticeset')
+        const response = await settingApi.getNotice()
         if (response.data.success) {
           this.noticeList = response.data.list
         }
@@ -183,6 +183,7 @@ export default {
     },
     handleAdd() {
       this.dialogType = 'add'
+      this.noticeForm.id = ''
       this.noticeForm.type = ''
       this.noticeForm.target = ''
       this.noticeForm.status = '启用'
@@ -199,7 +200,7 @@ export default {
           type: 'warning'
         })
 
-        const response = await axios.delete(`/noticeset/${row.id}`)
+        const response = await settingApi.deleteNotice({ id: row.id })
         if (response.data.success) {
           Message.success('删除成功')
           await this.getNoticeList()
@@ -214,10 +215,8 @@ export default {
       this.$refs.noticeFormRef.validate(async(valid) => {
         if (valid) {
           try {
-            const url = this.dialogType === 'add' ? '/noticeset' : `/noticeset/${this.noticeForm.id}`
-            const method = this.dialogType === 'add' ? 'post' : 'put'
-
-            const response = await axios[method](url, this.noticeForm)
+            const method = this.dialogType === 'add' ? 'setNotice' : 'setNotice'
+            const response = await settingApi[method](this.noticeForm)
             if (response.data.success) {
               Message.success(this.dialogType === 'add' ? '添加成功' : '更新成功')
               this.dialogVisible = false
@@ -255,7 +254,7 @@ export default {
         })
 
         const ids = this.selectedItems.map(item => item.id)
-        const response = await axios.post('/noticeset/batch-delete', { ids })
+        const response = await settingApi.deleteNotice({ ids })
         if (response.data.success) {
           Message.success('批量删除成功')
           await this.getNoticeList()
@@ -271,7 +270,7 @@ export default {
         if (valid) {
           try {
             const targets = this.batchForm.targets.split('\n').filter(t => t.trim())
-            const response = await axios.post('/noticeset/batch-add', {
+            const response = await settingApi.setNotice({
               type: this.batchForm.type,
               targets
             })
@@ -293,3 +292,137 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.notice-management {
+  padding: 20px;
+}
+
+.operation-bar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.left-operations, .right-operations {
+  display: flex;
+  gap: 10px;
+}
+
+.right-operations {
+  align-items: center;
+}
+
+/* 操作按钮 */
+.el-button {
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.el-button:hover {
+  background-color: #ecf5ff;
+}
+
+/* 表格样式 */
+.el-table {
+  width: 100%;
+  margin-top: 20px;
+  border-radius: 4px;
+}
+
+.el-table th {
+  background-color: #f5f7fa;
+  color: #606266;
+  font-weight: 500;
+}
+
+.el-table__row:hover {
+  background-color: #f5f7fa !important;
+}
+
+/* 分页器 */
+.pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 15px;
+}
+
+/* 弹窗样式 */
+.el-dialog {
+  border-radius: 8px;
+}
+
+.el-dialog__header {
+  border-bottom: 1px solid #ebeef5;
+  padding: 15px 20px;
+}
+
+.el-dialog__title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.el-dialog__body {
+  padding: 20px;
+}
+
+.el-form-item {
+  margin-bottom: 20px;
+}
+
+.el-input__inner {
+  border-radius: 4px;
+}
+
+.el-select .el-input__inner {
+  width: 100%;
+}
+
+.el-switch {
+  margin-right: 10px;
+}
+
+.dialog-footer {
+  text-align: right;
+  padding-top: 10px;
+  border-top: 1px solid #ebeef5;
+}
+
+/* 批量管理选择框 */
+.el-table-column--selection .cell {
+  padding-left: 0;
+}
+
+/* 标签样式 */
+.el-tag {
+  border-radius: 4px;
+}
+
+/* 提示信息 */
+.el-message-box {
+  border-radius: 8px;
+}
+
+.el-message-box__message p {
+  color: #606266;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .operation-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .left-operations, .right-operations {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .el-table {
+    font-size: 14px;
+  }
+}
+</style>
