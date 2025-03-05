@@ -156,7 +156,7 @@
 
 <script>
 import { Message, MessageBox } from 'element-ui'
-import axios from 'axios'
+import { banlogApi } from '@/api/banlog'
 
 export default {
   data() {
@@ -190,7 +190,6 @@ export default {
         ]
       },
       batchDialogVisible: false,
-      batchFormRef: null,
       batchForm: {
         ips: ''
       },
@@ -205,25 +204,27 @@ export default {
     handleSelectionChange(rows) {
       this.selectedRows = rows
     },
-    handleSearch() {
+    async handleSearch() {
       this.loading = true
-      axios.get('/bannip', {
-        params: {
-          ...this.searchForm,
+      try {
+        const response = await banlogApi.getLog({
+          ip: this.searchForm.ip,
+          source: this.searchForm.source,
           page: this.currentPage,
           pageSize: this.pageSize
-        }
-      })
-        .then(response => {
+        })
+
+        if (response.data.success) {
           this.tableData = response.data.data
           this.total = response.data.total
-        })
-        .catch(() => {
-          Message.error('查询失败')
-        })
-        .finally(() => {
-          this.loading = false
-        })
+        } else {
+          Message.error(response.data.message || '查询失败')
+        }
+      } catch (error) {
+        Message.error('服务器错误，请稍后重试')
+      } finally {
+        this.loading = false
+      }
     },
     handleAddIP() {
       this.dialogType = 'add'
@@ -240,91 +241,109 @@ export default {
       this.formData.expireType = row.expireTime ? 'custom' : 'never'
       this.dialogVisible = true
     },
-    handleDelete(row) {
-      MessageBox.confirm(`确定要删除IP ${row.ip} 吗？`, '提示')
-        .then(() => {
-          axios.delete(`/bannip/${row.ip}`)
-            .then(() => {
-              Message.success('删除成功')
-              this.handleSearch()
-            })
-            .catch(() => {
-              Message.error('删除失败')
-            })
-        })
-        .catch(() => {
-        })
+    async handleDelete(row) {
+      try {
+        await MessageBox.confirm(`确定要删除IP ${row.ip} 吗？`, '提示')
+
+        const response = await banlogApi.deleteBanList({ IP: [row.ip] })
+        if (response.data.success) {
+          Message.success('删除成功')
+          this.handleSearch()
+        } else {
+          Message.error(response.data.message || '删除失败')
+        }
+      } catch (error) {
+        if (error !== 'cancel') {
+          Message.error('删除失败')
+        }
+      }
     },
-    handleBatchDelete() {
+    async handleBatchDelete() {
       if (!this.selectedRows.length) return
 
-      MessageBox.confirm(`确定要删除选中的 ${this.selectedRows.length} 个IP吗？`, '提示')
-        .then(() => {
-          const ips = this.selectedRows.map(row => row.ip)
-          axios.delete('/bannip/batch', { data: { ips } })
-            .then(() => {
-              Message.success('批量删除成功')
-              this.handleSearch()
-            })
-            .catch(() => {
-              Message.error('批量删除失败')
-            })
-        })
-        .catch(() => {
-        })
+      try {
+        await MessageBox.confirm(`确定要删除选中的 ${this.selectedRows.length} 个IP吗？`, '提示')
+
+        const ips = this.selectedRows.map(row => row.ip)
+        const response = await banlogApi.deleteBanList({ IP: ips })
+        if (response.data.success) {
+          Message.success('批量删除成功')
+          this.handleSearch()
+        } else {
+          Message.error(response.data.message || '批量删除失败')
+        }
+      } catch (error) {
+        if (error !== 'cancel') {
+          Message.error('批量删除失败')
+        }
+      }
     },
     handleBatchAdd() {
       this.batchForm.ips = ''
       this.batchDialogVisible = true
     },
-    handleSubmit() {
-      this.$refs.formRef.validate(valid => {
+    async handleSubmit() {
+      this.$refs.formRef.validate(async valid => {
         if (!valid) return
 
         const data = {
-          ip: this.formData.ip,
-          source: this.formData.source,
+          IP: [this.formData.ip],
           expireTime: this.formData.expireType === 'custom' ? this.formData.expireTime : null,
-          remark: this.formData.remark
+          UnderAttack: this.formData.targetAsset,
+          Weapons: this.formData.attackType,
+          note: this.formData.remark
         }
 
-        if (this.dialogType === 'add') {
-          axios.post('/bannip', data)
-            .then(() => {
+        try {
+          if (this.dialogType === 'add') {
+            const response = await banlogApi.setHfishBanList(data)
+            if (response.data.success) {
               Message.success('添加成功')
               this.dialogVisible = false
               this.handleSearch()
-            })
-            .catch(() => {
-              Message.error('添加失败')
-            })
-        } else {
-          axios.put(`/bannip/${data.ip}`, data)
-            .then(() => {
+            } else {
+              Message.error(response.data.message || '添加失败')
+            }
+          } else {
+            const response = await banlogApi.setHfishBanList(data)
+            if (response.data.success) {
               Message.success('修改成功')
               this.dialogVisible = false
               this.handleSearch()
-            })
-            .catch(() => {
-              Message.error('修改失败')
-            })
+            } else {
+              Message.error(response.data.message || '修改失败')
+            }
+          }
+        } catch (error) {
+          Message.error('操作失败')
         }
       })
     },
-    handleBatchSubmit() {
-      this.$refs.batchFormRef.validate(valid => {
+    async handleBatchSubmit() {
+      this.$refs.batchFormRef.validate(async valid => {
         if (!valid) return
 
         const ips = this.batchForm.ips.split('\n').map(ip => ip.trim()).filter(ip => ip)
-        axios.post('/bannip/batch', { ips })
-          .then(() => {
+        const data = {
+          IP: ips,
+          expireTime: null, // 根据需求设置过期时间
+          UnderAttack: '', // 根据需求设置被攻击资产
+          Weapons: '', // 根据需求设置攻击方式
+          note: '' // 根据需求设置备注
+        }
+
+        try {
+          const response = await banlogApi.setHfishBanList(data)
+          if (response.data.success) {
             Message.success('批量添加成功')
             this.batchDialogVisible = false
             this.handleSearch()
-          })
-          .catch(() => {
-            Message.error('批量添加失败')
-          })
+          } else {
+            Message.error(response.data.message || '批量添加失败')
+          }
+        } catch (error) {
+          Message.error('批量操作失败')
+        }
       })
     },
     handleRefresh() {

@@ -58,8 +58,8 @@
 </template>
 
 <script>
-import { Message, MessageBox } from 'element-ui'
-import axios from 'axios'
+import { Message } from 'element-ui'
+import { banlogApi } from '@/api/banlog'
 
 export default {
   data() {
@@ -87,12 +87,11 @@ export default {
     async handleSearch() {
       this.loading = true
       try {
-        const response = await axios.get('/banlistlog', {
-          params: {
-            ...this.searchForm,
-            page: this.currentPage,
-            pageSize: this.pageSize
-          }
+        const response = await banlogApi.getLog({
+          ip: this.searchForm.ip,
+          source: this.searchForm.source,
+          page: this.currentPage,
+          pageSize: this.pageSize
         })
 
         if (response.data.success) {
@@ -125,7 +124,6 @@ export default {
 <style scoped>
 .ban-list-log {
   padding: 20px;
-  height: 70vh;
 }
 
 .search-area {
@@ -170,12 +168,10 @@ export default {
   font-weight: 500;
 }
 
-/* 分页器样式 */
 :deep(.el-pagination) {
   justify-content: center;
 }
 
-/* 标签样式 */
 :deep(.el-tag) {
   border-radius: 2px;
 }
