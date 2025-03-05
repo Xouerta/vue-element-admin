@@ -10,7 +10,7 @@
         <div class="status-section">
           <div class="status-item">
             <span class="label">证书状态:</span>
-            <el-tag :type="certStatus === '正常' ? 'success' : 'danger'">
+            <el-tag :type="certStatusType">
               {{ certStatus }}
             </el-tag>
           </div>
@@ -70,9 +70,10 @@
     </el-card>
   </div>
 </template>
+
 <script>
 import { Message } from 'element-ui'
-import axios from 'axios'
+import { licenceApi, LICENCE_STATUS, LICENCE_TYPE } from '@/api/licence'
 
 export default {
   data() {
@@ -101,31 +102,49 @@ export default {
       }
     }
   },
+  computed: {
+    certStatusType() {
+      switch (this.certStatus) {
+        case 'active':
+          return 'success'
+        case 'expired':
+          return 'danger'
+        case 'invalid':
+          return 'danger'
+        default:
+          return 'info'
+      }
+    }
+  },
   methods: {
     // 获取证书信息
-    getCertInfo() {
-      axios.get('/book')
-        .then(response => {
-          if (response.data.success) {
-            this.certStatus = response.data.status
-            this.certType = response.data.type
-            this.whitelistCount = response.data.whitelistCount
-            this.alertDeviceCount = response.data.alertDeviceCount
-            this.banDeviceCount = response.data.banDeviceCount
-            this.expiryTime = response.data.expiryTime
-          }
-        })
-        .catch(() => {
-          Message.error('获取证书信息失败')
-        })
+    async getCertInfo() {
+      try {
+        const response = await licenceApi.getLicence()
+        if (response.data.success) {
+          this.certStatus = response.data.status
+          this.certType = response.data.type
+          this.whitelistCount = response.data.whitelistCount
+          this.alertDeviceCount = response.data.alertDeviceCount
+          this.banDeviceCount = response.data.banDeviceCount
+          this.expiryTime = response.data.expiryTime
+        } else {
+          Message.error(response.data.message || '获取证书信息失败')
+        }
+      } catch (error) {
+        Message.error('获取证书信息失败')
+      }
     },
 
     // 提交表单
-    handleSubmit() {
+    async handleSubmit() {
       this.$refs.formRef.validate(async valid => {
         if (valid) {
           try {
-            const response = await axios.post('/book', this.formData)
+            const response = await licenceApi.setLicence({
+              id: this.formData.certCode,
+              mail: this.formData.email
+            })
             if (response.data.success) {
               Message.success('证书配置成功')
               this.getCertInfo() // 刷新证书信息
@@ -140,11 +159,14 @@ export default {
     },
 
     // 在线绑定
-    handleOnlineSubmit() {
+    async handleOnlineSubmit() {
       this.$refs.formRef.validate(async valid => {
         if (valid) {
           try {
-            const response = await axios.post('/book/online', this.formData)
+            const response = await licenceApi.setLicence({
+              id: this.formData.certCode,
+              mail: this.formData.email
+            })
             if (response.data.success) {
               Message.success('在线绑定成功')
               this.getCertInfo() // 刷新证书信息
@@ -168,6 +190,7 @@ export default {
   }
 }
 </script>
+
 <style scoped>
 .certificate-config {
   padding: 20px;
