@@ -48,6 +48,7 @@
       :data="tableData"
       style="width: 100%"
       v-loading="loading"
+      height="70vh"
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="55" />

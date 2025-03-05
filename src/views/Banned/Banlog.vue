@@ -20,6 +20,7 @@
       :data="tableData"
       style="width: 100%"
       v-loading="loading"
+      height="70vh"
     >
       <el-table-column prop="ip" label="IP / Cidr" min-width="150"/>
       <el-table-column prop="source" label="来源" width="120" />
@@ -124,6 +125,7 @@ export default {
 <style scoped>
 .ban-list-log {
   padding: 20px;
+  height: 70vh;
 }
 
 .search-area {
