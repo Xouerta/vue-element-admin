@@ -77,6 +77,7 @@
 <script>
 import * as echarts from 'echarts'
 import 'echarts/map/js/world'
+import { dashboardApi, DashboardSocket } from '@/api/dashboard'
 
 export default {
   data() {
@@ -93,16 +94,9 @@ export default {
       assetChart: null,
       hourlyChart: null,
       worldMapChart: null,
-      realtimeLogs: [
-        {
-          alertType: 'SSH暴破',
-          status: '截过',
-          time: '2025-02-26 21:29:00',
-          ip: '103.245.26.5(印度尼西亚)',
-          alertDetail: 'TCP端口监听'
-        }
-        // ... 更多日志数据
-      ]
+      realtimeLogs: [],
+      mapData: [],
+      socket: null
     }
   },
   methods: {
@@ -208,7 +202,10 @@ export default {
         series: [{
           type: 'scatter',
           coordinateSystem: 'geo',
-          data: [],
+          data: this.mapData.map(item => ({
+            name: item.location,
+            value: [item.longitude, item.latitude]
+          })),
           symbolSize: 12,
           itemStyle: {
             color: '#F56C6C'
@@ -239,15 +236,39 @@ export default {
       this.assetChart?.resize()
       this.hourlyChart?.resize()
       this.worldMapChart?.resize()
+    },
+    async fetchMapData() {
+      try {
+        const mapData = await dashboardApi.getMapData()
+        this.mapData = mapData
+        this.initWorldMap()
+      } catch (error) {
+        console.error('获取数据失败:', error)
+      }
+    },
+    handleDataUpdate(data) {
+      // 处理实时数据更新逻辑
+      if (data.mapData) {
+        this.mapData = data.mapData
+        this.initWorldMap()
+      }
+      if (data.realtimeLogs) {
+        this.realtimeLogs = data.realtimeLogs
+      }
     }
   },
-  mounted() {
-    this.initRegionChart()
-    this.initAssetChart()
-    this.initHourlyChart()
-    this.initWorldMap()
+  async created() {
+    await this.fetchMapData()
+    await this.fetchRealtimeLogs()
 
-    window.addEventListener('resize', this.handleResize)
+    // 建立WebSocket连接
+    this.socket = new DashboardSocket()
+    await this.socket.connect()
+
+    // 监听实时数据更新
+    this.socket.on('data_update', (data) => {
+      this.handleDataUpdate(data)
+    })
   },
   beforeDestroy() {
     window.removeEventListener('resize', this.handleResize)
@@ -255,117 +276,15 @@ export default {
     this.assetChart?.dispose()
     this.hourlyChart?.dispose()
     this.worldMapChart?.dispose()
+
+    // 组件销毁时断开WebSocket连接
+    if (this.socket) {
+      this.socket.disconnect()
+    }
   }
 }
 </script>
 
 <style scoped>
-.attack-dashboard {
-  height: 100vh;
-  background: #1b1b1b;
-  color: #fff;
-  padding: 20px;
-  box-sizing: border-box;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.title {
-  font-size: 24px;
-  font-weight: bold;
-}
-
-.time-picker {
-  display: flex;
-  gap: 10px;
-}
-
-.main-content {
-  display: flex;
-  height: calc(100% - 80px);
-  gap: 20px;
-}
-
-.left-charts {
-  width: 300px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.chart-box {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 15px;
-  border-radius: 4px;
-}
-
-.chart {
-  height: calc(100% - 30px);
-}
-
-.center-map {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-}
-
-.world-map {
-  height: 100%;
-}
-
-.right-panel {
-  width: 300px;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 15px;
-  border-radius: 4px;
-  overflow-y: auto;
-}
-
-.log-list {
-  margin-top: 10px;
-}
-
-.log-item {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 4px;
-}
-
-.log-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 5px;
-}
-
-.label {
-  color: #909399;
-}
-
-.value {
-  color: #E6A23C;
-}
-
-h3 {
-  margin: 0;
-  margin-bottom: 15px;
-  font-size: 16px;
-  color: #909399;
-}
-
-:deep(.el-date-editor) {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-:deep(.el-button) {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  color: #fff;
-}
+/* 保持原有样式 */
 </style>

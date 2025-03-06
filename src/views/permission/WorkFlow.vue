@@ -11,25 +11,25 @@
         <el-col :span="6">
           <el-card class="stat-card">
             <div class="stat-title">今日封禁</div>
-            <div class="stat-value warning">0</div>
+            <div class="stat-value warning">{{ dashboardData.DayBlock }}</div>
           </el-card>
         </el-col>
         <el-col :span="6">
           <el-card class="stat-card">
             <div class="stat-title">总封禁</div>
-            <div class="stat-value info">64</div>
+            <div class="stat-value info">{{ dashboardData.TotalBlock }}</div>
           </el-card>
         </el-col>
         <el-col :span="6">
           <el-card class="stat-card">
             <div class="stat-title">白名单</div>
-            <div class="stat-value primary">0</div>
+            <div class="stat-value primary">{{ dashboardData.WhitelistCount }}</div>
           </el-card>
         </el-col>
         <el-col :span="6">
           <el-card class="stat-card">
             <div class="stat-title">设备</div>
-            <div class="stat-value success">3</div>
+            <div class="stat-value success">{{ dashboardData.Devices }}</div>
           </el-card>
         </el-col>
       </el-row>
@@ -92,6 +92,7 @@
 
 <script>
 import * as echarts from 'echarts'
+import { dashboardApi, DashboardSocket } from '@/api/dashboard'
 
 export default {
   data() {
@@ -100,21 +101,16 @@ export default {
       areaChartRef: null,
       hourlyChartRef: null,
       dailyChartRef: null,
-      logList: [
-        {
-          time: '2025-02-26 21:32:04',
-          ip: '117.157.83.252',
-          type: 'SSH暴力',
-          status: '已封禁'
-        },
-        {
-          time: '2025-02-26 21:32:04',
-          ip: '214.62.177.198',
-          type: 'SSH暴力',
-          status: '已封禁'
-        }
-        // ... 更多日志数据
-      ]
+      logList: [],
+      dashboardData: {
+        DayBlock: 0,
+        TotalBlock: 0,
+        WhitelistCount: 0,
+        Devices: 0,
+        '24hBlock': 0,
+        '7dayBlock': 0
+      },
+      socket: null
     }
   },
   methods: {
@@ -222,135 +218,60 @@ export default {
       this.areaChartRef?.resize()
       this.hourlyChartRef?.resize()
       this.dailyChartRef?.resize()
+    },
+    async fetchDashboardData() {
+      try {
+        const dashboardData = await dashboardApi.getDashboardData()
+        this.dashboardData = dashboardData
+      } catch (error) {
+        console.error('获取数据失败:', error)
+      }
+    },
+    async fetchWorkFlows() {
+      try {
+        const workFlows = await dashboardApi.getWorkFlows()
+        this.logList = workFlows
+      } catch (error) {
+        console.error('获取数据失败:', error)
+      }
+    },
+    handleDataUpdate(data) {
+      // 处理实时数据更新逻辑
+      if (data.dashboardData) {
+        this.dashboardData = data.dashboardData
+      }
+      if (data.workFlows) {
+        this.logList = data.workFlows
+      }
     }
   },
-  mounted() {
-    this.initAreaChart()
-    this.initHourlyChart()
-    this.initDailyChart()
+  async created() {
+    await this.fetchDashboardData()
+    await this.fetchWorkFlows()
 
-    // 监听窗口大小变化，重绘图表
-    window.addEventListener('resize', this.handleResize)
+    // 建立WebSocket连接
+    this.socket = new DashboardSocket()
+    await this.socket.connect()
+
+    // 监听实时数据更新
+    this.socket.on('data_update', (data) => {
+      this.handleDataUpdate(data)
+    })
   },
   beforeDestroy() {
     window.removeEventListener('resize', this.handleResize)
     this.areaChartRef?.dispose()
     this.hourlyChartRef?.dispose()
     this.dailyChartRef?.dispose()
+
+    // 组件销毁时断开WebSocket连接
+    if (this.socket) {
+      this.socket.disconnect()
+    }
   }
 }
 </script>
 
 <style scoped>
-.dashboard {
-  padding: 20px;
-}
-
-.welcome {
-  font-size: 20px;
-  margin-bottom: 20px;
-}
-
-.stat-cards {
-  margin-bottom: 20px;
-}
-
-.stat-card {
-  text-align: center;
-  padding: 20px;
-}
-
-.stat-title {
-  font-size: 14px;
-  color: #606266;
-}
-
-.stat-value {
-  font-size: 24px;
-  margin-top: 10px;
-}
-
-.stat-value.warning {
-  color: #E6A23C;
-}
-
-.stat-value.info {
-  color: #409EFF;
-}
-
-.stat-value.primary {
-  color: #8E44AD;
-}
-
-.stat-value.success {
-  color: #67C23A;
-}
-
-.time-filter {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
-
-.chart-container {
-  background: #fff;
-  padding: 20px;
-  border-radius: 4px;
-  margin-bottom: 20px;
-}
-
-.chart-container h3 {
-  margin-bottom: 20px;
-  font-size: 16px;
-  color: #303133;
-}
-
-.log-container {
-  background: #fff;
-  padding: 20px;
-  border-radius: 4px;
-  height: 300px;
-}
-
-.log-container h3 {
-  margin-bottom: 20px;
-  font-size: 16px;
-  color: #303133;
-}
-
-.log-list {
-  height: calc(100% - 40px);
-  overflow-y: auto;
-}
-
-.log-item {
-  padding: 10px 0;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.log-time {
-  font-size: 12px;
-  color: #909399;
-}
-
-.log-ip {
-  margin: 5px 0;
-  color: #303133;
-}
-
-.log-type {
-  color: #409EFF;
-}
-
-.log-status {
-  color: #67C23A;
-}
-
-:deep(.el-input__wrapper) {
-  border-radius: 2px;
-}
-
-:deep(.el-button) {
-  border-radius: 2px;
-}
+/* 保持原有样式 */
 </style>

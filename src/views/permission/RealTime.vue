@@ -11,7 +11,7 @@
         <template slot-scope="scope">
           <div class="time-cell">
             <div class="label">告警时间</div>
-            <div class="value">{{ scope.row.alertTime }}</div>
+            <div class="value">{{ scope.row.create_time }}</div>
           </div>
         </template>
       </el-table-column>
@@ -21,7 +21,7 @@
         <template slot-scope="scope">
           <div class="ip-cell">
             <div class="label">IP</div>
-            <div class="value">{{ scope.row.ip }}</div>
+            <div class="value">{{ scope.row.attack_ip }}</div>
           </div>
         </template>
       </el-table-column>
@@ -41,7 +41,7 @@
         <template slot-scope="scope">
           <div class="device-cell">
             <div class="label">告警设备</div>
-            <div class="value">{{ scope.row.device }}</div>
+            <div class="value">{{ scope.row.source }}</div>
           </div>
         </template>
       </el-table-column>
@@ -52,7 +52,7 @@
           <div class="detail-cell">
             <div class="label">告警详情</div>
             <div class="value">
-              <el-tag size="small" type="warning">{{ scope.row.alertDetail }}</el-tag>
+              <el-tag size="small" type="warning">{{ scope.row.attack_method }}</el-tag>
             </div>
           </div>
         </template>
@@ -63,7 +63,7 @@
         <template slot-scope="scope">
           <div class="asset-cell">
             <div class="label">被攻击资产</div>
-            <div class="value">{{ scope.row.targetAsset }}</div>
+            <div class="value">{{ scope.row.attacked_asset }}</div>
           </div>
         </template>
       </el-table-column>
@@ -74,7 +74,7 @@
           <div class="status-cell">
             <div class="label">封禁状态</div>
             <div class="value">
-              <el-tag size="small" type="success">{{ scope.row.banStatus }}</el-tag>
+              <el-tag size="small" type="success">已封禁</el-tag>
             </div>
           </div>
         </template>
@@ -85,7 +85,7 @@
         <template slot-scope="scope">
           <div class="reason-cell">
             <div class="label">判定原因</div>
-            <div class="value">{{ scope.row.reason }}</div>
+            <div class="value">未知</div>
           </div>
         </template>
       </el-table-column>
@@ -107,6 +107,8 @@
 </template>
 
 <script>
+import { dashboardApi, DashboardSocket } from '@/api/dashboard'
+
 export default {
   data() {
     return {
@@ -114,24 +116,20 @@ export default {
       loading: false,
       total: 0,
       currentPage: 1,
-      pageSize: 20
+      pageSize: 20,
+      socket: null
     }
   },
   methods: {
     async getList() {
       this.loading = true
       try {
-        // 这里替换为实际的API调用
-        const response = await fetch('/api/alerts', {
-          params: {
-            page: this.currentPage,
-            pageSize: this.pageSize
-          }
+        const response = await dashboardApi.getWorkFlows({
+          page: this.currentPage,
+          pageSize: this.pageSize
         })
-        const data = await response.json()
-
-        this.tableData = data.list
-        this.total = data.total
+        this.tableData = response.data
+        this.total = response.total
       } catch (error) {
         this.$message.error('获取数据失败')
       } finally {
@@ -145,10 +143,31 @@ export default {
     handleCurrentChange(val) {
       this.currentPage = val
       this.getList()
+    },
+    handleDataUpdate(data) {
+      // 处理实时数据更新逻辑
+      if (data.workFlows) {
+        this.tableData = data.workFlows
+      }
     }
   },
-  mounted() {
-    this.getList()
+  async created() {
+    await this.getList()
+
+    // 建立WebSocket连接
+    this.socket = new DashboardSocket()
+    await this.socket.connect()
+
+    // 监听实时数据更新
+    this.socket.on('data_update', (data) => {
+      this.handleDataUpdate(data)
+    })
+  },
+  beforeDestroy() {
+    // 组件销毁时断开WebSocket连接
+    if (this.socket) {
+      this.socket.disconnect()
+    }
   }
 }
 </script>
