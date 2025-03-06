@@ -106,6 +106,14 @@ export const userApi = {
       url: '/auth/admin/Session',
       method: 'get'
     })
+  },
+
+  getInfo(token) {
+    return request({
+      url: '/auth/user/Info',
+      method: 'get',
+      params: {token}
+    })
   }
 }
 

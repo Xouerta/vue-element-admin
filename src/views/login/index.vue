@@ -1,6 +1,7 @@
 <template>
   <div class="login-container">
-    <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form" autocomplete="on" label-position="left">
+    <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form" autocomplete="on"
+             label-position="left">
 
       <div class="title-container">
         <h3 class="title">Login Form</h3>
@@ -8,7 +9,7 @@
 
       <el-form-item prop="username">
         <span class="svg-container">
-          <svg-icon icon-class="user" />
+          <svg-icon icon-class="user"/>
         </span>
         <el-input
           ref="username"
@@ -24,7 +25,7 @@
       <el-tooltip v-model="capsTooltip" content="Caps lock is On" placement="right" manual>
         <el-form-item prop="password">
           <span class="svg-container">
-            <svg-icon icon-class="password" />
+            <svg-icon icon-class="password"/>
           </span>
           <el-input
             :key="passwordType"
@@ -40,12 +41,14 @@
             @keyup.enter.native="handleLogin"
           />
           <span class="show-pwd" @click="showPwd">
-            <svg-icon :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'" />
+            <svg-icon :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'"/>
           </span>
         </el-form-item>
       </el-tooltip>
 
-      <el-button :loading="loading" type="primary" style="width:100%;margin-bottom:30px;" @click.native.prevent="handleLogin">Login</el-button>
+      <el-button :loading="loading" type="primary" style="width:100%;margin-bottom:30px;"
+                 @click.native.prevent="handleLogin">Login
+      </el-button>
 
       <div style="position:relative">
         <div class="tips">
@@ -68,19 +71,19 @@
       <br>
       <br>
       <br>
-      <social-sign />
+      <social-sign/>
     </el-dialog>
   </div>
 </template>
 
 <script>
-import { validUsername } from '@/utils/validate'
+import {validUsername} from '@/utils/validate'
 import SocialSign from './components/SocialSignin'
-import userApi from '@/api/user'
+import {mapActions} from "vuex";
 
 export default {
   name: 'Login',
-  components: { SocialSign },
+  components: {SocialSign},
   data() {
     const validateUsername = (rule, value, callback) => {
       if (!validUsername(value)) {
@@ -102,8 +105,8 @@ export default {
         password: '111111'
       },
       loginRules: {
-        username: [{ required: true, trigger: 'blur', validator: validateUsername }],
-        password: [{ required: true, trigger: 'blur', validator: validatePassword }]
+        username: [{required: true, trigger: 'blur', validator: validateUsername}],
+        password: [{required: true, trigger: 'blur', validator: validatePassword}]
       },
       passwordType: 'password',
       capsTooltip: false,
@@ -115,7 +118,7 @@ export default {
   },
   watch: {
     $route: {
-      handler: function(route) {
+      handler: function (route) {
         const query = route.query
         if (query) {
           this.redirect = query.redirect
@@ -139,8 +142,11 @@ export default {
     // window.removeEventListener('storage', this.afterQRScan)
   },
   methods: {
+    ...mapActions({
+      login: 'user/login'
+    }),
     checkCapslock(e) {
-      const { key } = e
+      const {key} = e
       this.capsTooltip = key && key.length === 1 && (key >= 'A' && key <= 'Z')
     },
     showPwd() {
@@ -153,23 +159,13 @@ export default {
         this.$refs.password.focus()
       })
     },
-    async handleLogin() {
-      this.$refs.loginForm.validate(valid => {
+    handleLogin() {
+      this.$refs.loginForm.validate(async valid => {
         if (valid) {
           this.loading = true
-          userApi.login(this.loginForm)
-              .then(response => {
-                if (response.data.success) {
-                  this.$store.dispatch('user/setToken', response.data.token)
-                  this.$router.push({ path: this.redirect || '/', query: this.otherQuery })
-                } else {
-                  this.$message.error(response.data.message || '登录失败')
-                }
-              this.loading = false
-            })
-            .catch(() => {
-              this.loading = false
-            })
+          await this.login(this.loginForm)
+          this.$router.push({path: this.redirect || '/', query: this.otherQuery})
+          this.loading = false
         } else {
           console.log('error submit!!')
           return false
