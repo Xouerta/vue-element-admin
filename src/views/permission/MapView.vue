@@ -286,5 +286,113 @@ export default {
 </script>
 
 <style scoped>
-/* 保持原有样式 */
+.attack-dashboard {
+  height: 100vh;
+  background: #1b1b1b;
+  color: #fff;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.time-picker {
+  display: flex;
+  gap: 10px;
+}
+
+.main-content {
+  display: flex;
+  height: calc(100% - 80px);
+  gap: 20px;
+}
+
+.left-charts {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.chart-box {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 4px;
+}
+
+.chart {
+  height: calc(100% - 30px);
+}
+
+.center-map {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.world-map {
+  height: 100%;
+}
+
+.right-panel {
+  width: 300px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 4px;
+  overflow-y: auto;
+}
+
+.log-list {
+  margin-top: 10px;
+}
+
+.log-item {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+
+.log-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.label {
+  color: #909399;
+}
+
+.value {
+  color: #E6A23C;
+}
+
+h3 {
+  margin: 0;
+  margin-bottom: 15px;
+  font-size: 16px;
+  color: #909399;
+}
+
+:deep(.el-date-editor) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+:deep(.el-button) {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+}
+
 </style>

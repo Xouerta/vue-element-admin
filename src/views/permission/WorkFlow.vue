@@ -273,5 +273,115 @@ export default {
 </script>
 
 <style scoped>
-/* 保持原有样式 */
+.dashboard {
+  padding: 20px;
+}
+
+.welcome {
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+.stat-cards {
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  text-align: center;
+  padding: 20px;
+}
+
+.stat-title {
+  font-size: 14px;
+  color: #606266;
+}
+
+.stat-value {
+  font-size: 24px;
+  margin-top: 10px;
+}
+
+.stat-value.warning {
+  color: #E6A23C;
+}
+
+.stat-value.info {
+  color: #409EFF;
+}
+
+.stat-value.primary {
+  color: #8E44AD;
+}
+
+.stat-value.success {
+  color: #67C23A;
+}
+
+.time-filter {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.chart-container {
+  background: #fff;
+  padding: 20px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.chart-container h3 {
+  margin-bottom: 20px;
+  font-size: 16px;
+  color: #303133;
+}
+
+.log-container {
+  background: #fff;
+  padding: 20px;
+  border-radius: 4px;
+  height: 300px;
+}
+
+.log-container h3 {
+  margin-bottom: 20px;
+  font-size: 16px;
+  color: #303133;
+}
+
+.log-list {
+  height: calc(100% - 40px);
+  overflow-y: auto;
+}
+
+.log-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.log-time {
+  font-size: 12px;
+  color: #909399;
+}
+
+.log-ip {
+  margin: 5px 0;
+  color: #303133;
+}
+
+.log-type {
+  color: #409EFF;
+}
+
+.log-status {
+  color: #67C23A;
+}
+
+:deep(.el-input__wrapper) {
+  border-radius: 2px;
+}
+
+:deep(.el-button) {
+  border-radius: 2px;
+}
 </style>

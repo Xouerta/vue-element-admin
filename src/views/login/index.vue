@@ -164,7 +164,7 @@ export default {
         if (valid) {
           this.loading = true
           await this.login(this.loginForm)
-          this.$router.push({path: this.redirect || '/', query: this.otherQuery})
+          this.$router.push({ path: '/permission/workbanch' || this.redirect, query: this.otherQuery })
           this.loading = false
         } else {
           console.log('error submit!!')
