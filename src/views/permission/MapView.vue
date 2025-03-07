@@ -127,7 +127,6 @@ export default {
       this.regionChart.setOption(option)
     },
     initAssetChart() {
-      this.assetChart = echarts.init(this.$refs.assetChart)
       const option = {
         grid: {
           left: '3%',
@@ -150,10 +149,10 @@ export default {
           }
         }]
       }
+      this.assetChart = echarts.init(this.$refs.assetChart)
       this.assetChart.setOption(option)
     },
     initHourlyChart() {
-      this.hourlyChart = echarts.init(this.$refs.hourlyChart)
       const option = {
         grid: {
           left: '3%',
@@ -180,10 +179,10 @@ export default {
           }
         }]
       }
+      this.hourlyChart = echarts.init(this.$refs.hourlyChart)
       this.hourlyChart.setOption(option)
     },
     initWorldMap() {
-      this.worldMapChart = echarts.init(this.$refs.worldMap)
       const option = {
         backgroundColor: 'transparent',
         geo: {
@@ -215,6 +214,7 @@ export default {
           }
         }]
       }
+      this.worldMapChart = echarts.init(this.$refs.worldMap)
       this.worldMapChart.setOption(option)
     },
     handleTimeChange() {
@@ -239,8 +239,28 @@ export default {
     },
     async fetchMapData() {
       try {
-        const mapData = await dashboardApi.getMapData()
-        this.mapData = mapData
+        // const mapData = await dashboardApi.getMapData()
+        this.mapData = [
+          {
+            location: 'China',
+            longitude: 116.391,
+            latitude: 39.904
+          },
+          {
+            location: 'USA',
+            longitude: -95.369,
+            latitude: 37.0902
+          },
+          {
+            location: 'India',
+            longitude: 78.9629,
+            latitude: 22.5937
+          },
+          {
+            location: 'Russia',
+            longitude: 37.6173,
+          }
+        ]
         this.initWorldMap()
       } catch (error) {
         console.error('获取数据失败:', error)
@@ -258,18 +278,24 @@ export default {
     }
   },
   async created() {
-    await this.fetchMapData()
-    await this.fetchRealtimeLogs()
-
-    // 建立WebSocket连接
-    this.socket = new DashboardSocket()
-    await this.socket.connect()
-
-    // 监听实时数据更新
-    this.socket.on('data_update', (data) => {
-      this.handleDataUpdate(data)
-    })
+    // await this.fetchMapData()
+    // await this.fetchRealtimeLogs()
+    //
+    // // 建立WebSocket连接
+    // this.socket = new DashboardSocket()
+    // await this.socket.connect()
+    //
+    // // 监听实时数据更新
+    // this.socket.on('data_update', (data) => {
+    //   this.handleDataUpdate(data)
+    // })
   },
+  mounted() {
+    this.fetchMapData()
+    this.initHourlyChart()
+    this.initRegionChart()
+    this.initAssetChart()
+    },
   beforeDestroy() {
     window.removeEventListener('resize', this.handleResize)
     this.regionChart?.dispose()
@@ -278,9 +304,9 @@ export default {
     this.worldMapChart?.dispose()
 
     // 组件销毁时断开WebSocket连接
-    if (this.socket) {
-      this.socket.disconnect()
-    }
+    // if (this.socket) {
+    //   this.socket.disconnect()
+    // }
   }
 }
 </script>
