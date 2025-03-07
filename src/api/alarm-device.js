@@ -1,19 +1,19 @@
-import request from '@/utils/request'
+import request from "@/utils/request";
 
-// 封禁设备管理接口
-export const blockDeviceApi = {
-  // 获取封禁设备列表
+// 告警设备管理接口
+export const alarmDeviceApi = {
+  // 获取告警设备列表
   fetchList() {
     return request({
-      url: '/device/block_device/list',
+      url: '/device/alarm_device/list',
       method: 'get'
     })
   },
 
-  // 添加封禁设备
+  // 添加告警设备
   addDevice(data) {
     return request({
-      url: '/device/block_device/add',
+      url: '/device/alarm_device/add',
       method: 'post',
       data: {
         name: data.deviceName,
@@ -22,10 +22,10 @@ export const blockDeviceApi = {
     })
   },
 
-  // 删除封禁设备
+  // 删除告警设备
   deleteDevice(deviceKey) {
     return request({
-      url: '/device/block_device/delete',
+      url: '/device/alarm_device/delete',
       method: 'post',
       data: { key: deviceKey }
     })
