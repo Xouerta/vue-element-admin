@@ -67,7 +67,7 @@ export const constantRoutes = [
   {
     path: '/',
     component: Layout,
-    redirect: '/dashboard',
+    redirect: '/permission/workbanch',
     children: [
       {
         path: 'dashboard',
