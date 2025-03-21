@@ -82,7 +82,7 @@
       >
         <el-table-column type="selection" width="55"></el-table-column>
         <el-table-column label="IP / Cidr" prop="ip"></el-table-column>
-        <el-table-column label="类别" prop="type"></el-table-column>
+        <el-table-column label="类别" prop="category"></el-table-column>
         <el-table-column label="创建时间" prop="createTime">
           <template slot-scope="scope">
             {{ formatTimestamp(scope.row.createTime) }}
@@ -98,14 +98,14 @@
             <el-button
               size="mini"
               plain
-              :type="scope.row.status === 0 ? 'success' : 'danger'"
+              :type="scope.row.status ? 'success' : 'danger'"
               @click="handleStatusChange(scope.row)"
             >
-              {{ scope.row.status === 0 ? '启用' : '禁用' }}
+              {{ scope.row.status ? '启用' : '禁用' }}
             </el-button>
           </template>
         </el-table-column>
-        <el-table-column label="备注" prop="remark"></el-table-column>
+        <el-table-column label="备注" prop="note"></el-table-column>
         <el-table-column label="操作" width="150">
           <template slot-scope="scope">
             <el-tooltip content="编辑" placement="top" :enterable="false">
@@ -208,7 +208,7 @@
 </template>
 
 <script>
-import { mapActions, mapState } from 'vuex'
+import {mapActions, mapState} from 'vuex'
 
 // 将 IP 验证函数移到组件外部
 const isValidIPs = (ip) => {
@@ -232,6 +232,15 @@ export default {
     storeTotal: {
       handler(newVal) {
         this.total = newVal
+      },
+      immediate: true
+    },
+    pageSize: {
+      async handler(newVal) {
+        await this.fetchData({
+          page: newVal,
+          size: this.pageSize
+        })
       },
       immediate: true
     }
@@ -318,24 +327,24 @@ export default {
       },
       rules: {
         ip: [
-          { required: true, message: '请输入IP列表', trigger: 'blur' },
-          { validator: validateIPs, trigger: 'blur' }
+          {required: true, message: '请输入IP列表', trigger: 'blur'},
+          {validator: validateIPs, trigger: 'blur'}
         ],
         type: [
-          { required: true, message: '请输入类别', trigger: 'blur' }
+          {required: true, message: '请输入类别', trigger: 'blur'}
         ],
         expireTime: [
-          { required: true, message: '请选择过期时间', trigger: 'change' },
-          { validator: validateExpireTime, trigger: 'change' }
+          {required: true, message: '请选择过期时间', trigger: 'change'},
+          {validator: validateExpireTime, trigger: 'change'}
         ]
       },
-      total: 0
+      total: 0,
     }
   },
   created() {
     console.log('Store state:', this.$store.state)  // 查看整个 store 状态
     console.log('WhiteList module:', this.$store.state.whiteLists)  // 查看 whitelist 模块状态
-    this.fetchData()
+    // this.fetchData()
   },
   methods: {
     ...mapActions({
@@ -369,11 +378,12 @@ export default {
 
     handleStatusChange(row) {
       const newStatus = row.status === 0 ? 1 : 0
-      const updatedRow = { ...row, status: newStatus }
+      const updatedRow = {...row, status: newStatus}
 
       this.updateWhitelist(updatedRow).then(() => {
         row.status = newStatus
         this.$message.success('状态更新成功')
+        this.fetchData()
       }).catch(() => {
         this.$message.error('状态更新失败')
       })
@@ -395,7 +405,8 @@ export default {
         } catch (error) {
           this.$message.error('删除失败')
         }
-      }).catch(() => {})
+      }).catch(() => {
+      })
     },
 
     handleBatchEnable() {
@@ -411,10 +422,12 @@ export default {
         const ips = this.selectedRows.map(row => row.ip)
         this.batchEnable(ips).then(() => {
           this.$message.success('批量启用成功')
+          this.fetchData()
         }).catch(() => {
           this.$message.error('批量启用失败')
         })
-      }).catch(() => {})
+      }).catch(() => {
+      })
     },
 
     handleBatchDisable() {
@@ -430,10 +443,12 @@ export default {
         const ips = this.selectedRows.map(row => row.ip)
         this.batchDisable(ips).then(() => {
           this.$message.success('批量禁用成功')
+          this.fetchData()
         }).catch(() => {
           this.$message.error('批量禁用失败')
         })
-      }).catch(() => {})
+      }).catch(() => {
+      })
     },
 
     handleBatchDelete() {
@@ -458,8 +473,8 @@ export default {
         } catch (error) {
           this.$message.error('批量删除失败')
         }
-      }).catch(() => {})
-      console.log(this.$store.state.whiteLists)
+      }).catch(() => {
+      })
     },
 
     // 处理添加按钮点击
@@ -503,7 +518,7 @@ export default {
     },
 
     // 修改提交表单方法
-    submitAddForm() {
+    async submitAddForm() {
       this.$refs.addForm.validate(async (valid) => {
         if (valid) {
           try {
@@ -515,14 +530,16 @@ export default {
 
             const formData = {
               ...this.addForm,
-              ip: formattedIPs
+              ip: formattedIPs,
+              status: true
             }
 
-            await this.addWhitelist(formData)
-            this.$message.success('添加成功')
+            const addIPs = await this.addWhitelist(formData)
+            this.$message.success('成功添加 ' + addIPs +' 个 IP')
             this.addDialogVisible = false
             this.fetchData()
           } catch (error) {
+            console.log(error)
             this.$message.error('添加失败')
           }
         }

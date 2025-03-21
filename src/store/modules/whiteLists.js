@@ -1,35 +1,27 @@
+import {
+  fetchWhitelist,
+  addWhitelist,
+  deleteWhitelist,
+  editWhiteList,
+  searchWhileListByCategory,
+  searchWhileListByIP,
+} from '@/api/white-list'
+
 const state = {
-  tableData: [
-    {
-      ip: '192.168.1.1',
-      type: '测试',
-      status: 1,
-      createTime: Date.now(),
-      expireTime: new Date('2024-12-31 23:59:59').getTime(),
-      remark: '测试IP'
-    },
-    {
-      ip: '192.168.1.2',
-      type: '开发',
-      status: 0,
-      createTime: Date.now(),
-      expireTime: new Date('2024-12-31 23:59:59').getTime(),
-      remark: '开发IP'
-    }
-  ],
-  total: 2,
+  tableData: [],
+  total: 0,
   loading: false
 }
 
 const mutations = {
-  SET_TABLE_DATA(state, { list, total }) {
+  SET_TABLE_DATA(state, {list, total}) {
     state.tableData = list
     state.total = total
   },
   SET_LOADING(state, status) {
     state.loading = status
   },
-  UPDATE_WHITELIST_STATUS(state, { ip, status }) {
+  UPDATE_WHITELIST_STATUS(state, {ip, status}) {
     const item = state.tableData.find(item => item.ip === ip)
     if (item) {
       item.status = status
@@ -46,7 +38,7 @@ const mutations = {
     state.tableData.unshift(whitelist)
     state.total++
   },
-  BATCH_UPDATE_STATUS(state, { ips, status }) {
+  BATCH_UPDATE_STATUS(state, {ips, status}) {
     ips.forEach(ip => {
       const item = state.tableData.find(item => item.ip === ip)
       if (item) {
@@ -64,27 +56,34 @@ const mutations = {
 
 const actions = {
   // 获取白名单列表
-  async fetchTableData({ commit }, { page, pageSize, ip, type }) {
+  async fetchTableData({commit}, {page, pageSize, ip, type}) {
     commit('SET_LOADING', true)
     try {
-
-      // 模拟搜索过滤
-      let filteredList = state.tableData
       if (ip) {
-        filteredList = filteredList.filter(item => item.ip.includes(ip))
+        const { entries } = await searchWhileListByIP(ip)
+        commit('SET_TABLE_DATA', {
+          list: entries,
+          total: entries.length
+        })
+        return
       }
       if (type) {
-        filteredList = filteredList.filter(item => item.type.includes(type))
+        const { entries } = await searchWhileListByCategory(type)
+        commit('SET_TABLE_DATA', {
+          list: entries,
+          total: entries.length
+        })
+        return
       }
 
-      // 模拟分页
-      const start = (page - 1) * pageSize
-      const end = start + pageSize
-      const paginatedList = filteredList.slice(start, end)
+      const { entries, total } = await fetchWhitelist({
+        page,
+        pageSize,
+      })
 
       commit('SET_TABLE_DATA', {
-        list: paginatedList,
-        total: filteredList.length
+        list: entries,
+        total: total
       })
     } catch (error) {
       console.error('获取数据失败:', error)
@@ -95,14 +94,9 @@ const actions = {
   },
 
   // 更新白名单状态
-  async updateWhitelist({ commit }, data) {
+  async updateWhitelist({commit}, data) {
     try {
-      // 模拟API调用延迟
-      await new Promise(resolve => setTimeout(resolve, 500))
-      commit('UPDATE_WHITELIST_STATUS', {
-        ip: data.ip,
-        status: data.status
-      })
+      await editWhiteList(data)
     } catch (error) {
       console.error('更新状态失败:', error)
       throw error
@@ -110,16 +104,9 @@ const actions = {
   },
 
   // 删除白名单
-  async deleteWhitelist({ commit, dispatch }, ip) {
+  async deleteWhitelist({commit, dispatch}, ip) {
     try {
-      // 模拟API调用延迟
-      await new Promise(resolve => setTimeout(resolve, 500))
-      commit('DELETE_WHITELIST', ip)
-      // 删除后重新获取当前页数据
-      await dispatch('fetchTableData', {
-        page: state.currentPage,
-        pageSize: state.pageSize
-      })
+      await deleteWhitelist([ip])
     } catch (error) {
       console.error('删除失败:', error)
       throw error
@@ -127,15 +114,10 @@ const actions = {
   },
 
   // 添加白名单
-  async addWhitelist({ commit }, data) {
+  async addWhitelist({commit}, data) {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      commit('ADD_WHITELIST', {
-        ...data,
-        createTime: Date.now(),
-        expireTime: new Date(data.expireTime).getTime(),
-        status: 1
-      })
+      const {success_ips} =await addWhitelist(data)
+      return success_ips.length
     } catch (error) {
       console.error('添加失败:', error)
       throw error
@@ -143,11 +125,11 @@ const actions = {
   },
 
   // 批量启用
-  async batchEnable({ commit }, ips) {
+  async batchEnable({commit}, ips) {
     try {
-      // 模拟API调用延迟
-      await new Promise(resolve => setTimeout(resolve, 500))
-      commit('BATCH_UPDATE_STATUS', { ips, status: 0 })
+      const {success_ips} = await editWhiteList({ips, status: '启用'})
+
+      commit('SET_ADD_IPS', success_ips.length)
     } catch (error) {
       console.error('批量启用失败:', error)
       throw error
@@ -155,11 +137,9 @@ const actions = {
   },
 
   // 批量禁用
-  async batchDisable({ commit }, ips) {
+  async batchDisable({commit}, ips) {
     try {
-      // 模拟API调用延迟
-      await new Promise(resolve => setTimeout(resolve, 500))
-      commit('BATCH_UPDATE_STATUS', { ips, status: 1 })
+      await editWhiteList({ips, status: '禁用'})
     } catch (error) {
       console.error('批量禁用失败:', error)
       throw error
@@ -167,16 +147,9 @@ const actions = {
   },
 
   // 批量删除
-  async batchDelete({ commit, dispatch }, ips) {
+  async batchDelete({commit, dispatch}, ips) {
     try {
-      // 模拟API调用延迟
-      await new Promise(resolve => setTimeout(resolve, 500))
-      commit('BATCH_DELETE', ips)
-      // 删除后重新获取当前页数据
-      await dispatch('fetchTableData', {
-        page: state.currentPage,
-        pageSize: state.pageSize
-      })
+      await deleteWhitelist(ips)
     } catch (error) {
       console.error('批量删除失败:', error)
       throw error
