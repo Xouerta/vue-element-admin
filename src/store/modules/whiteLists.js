@@ -62,8 +62,8 @@ const actions = {
       if (ip) {
         const { entries } = await searchWhileListByIP(ip)
         commit('SET_TABLE_DATA', {
-          list: entries,
-          total: entries.length
+          list: [entries], // todo 确认
+          total: 1
         })
         return
       }

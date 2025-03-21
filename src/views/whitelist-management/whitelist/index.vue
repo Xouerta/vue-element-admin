@@ -43,7 +43,7 @@
           搜索
         </el-button>
       </div>
-      <div class="right-buttons">
+      <div class="right-buttons" v-if="false">
         <el-tooltip content="批量启用" placement="top" :enterable="false">
           <el-button
             icon="el-icon-check"
@@ -79,6 +79,8 @@
         style="width: 100%"
         height="70vh"
         @selection-change="handleSelectionChange"
+        :header-cell-style="{'text-align':'center'}"
+        :cell-style="{'text-align': 'center'}"
       >
         <el-table-column type="selection" width="55"></el-table-column>
         <el-table-column label="IP / Cidr" prop="ip"></el-table-column>
@@ -157,50 +159,54 @@
       <el-button size="small" plain>前往</el-button>
     </div>
 
-    <!-- 添加白名单对话框 -->
+    <!-- 统一编辑对话框 -->
     <el-dialog
-      title="添加白名单"
-      :visible.sync="addDialogVisible"
+      :title="dialogType === 'add' ? '添加白名单' : '编辑白名单'"
+      :visible.sync="dialogVisible"
       width="500px"
-      @close="resetAddForm"
-    >
-      <el-form :model="addForm" :rules="rules" ref="addForm" label-width="100px">
+      @close="resetForm">
+      <el-form
+        :model="form"
+        :rules="rules"
+        ref="formRef"
+        label-width="100px">
         <el-form-item label="IP列表" prop="ip">
           <el-input
             type="textarea"
-            v-model="addForm.ip"
+            v-model="form.ip"
             :rows="4"
-            placeholder="按行输入需要加白的IP，支持CIDR，eg.
-123.123.123.123
-123.123.123.0/24"
-          ></el-input>
+            :disabled="dialogType === 'edit'"
+            placeholder="输入IP/CIDR"></el-input>
         </el-form-item>
         <el-form-item label="类别" prop="type">
-          <el-input
-            v-model="addForm.type"
-            placeholder="请输入以上IP分类"
-          ></el-input>
+          <el-input v-model="form.type" placeholder="请类别"></el-input>
         </el-form-item>
-        <el-form-item label="过期时间" prop="expireTime">
+        <el-form-item label="状态" prop="status" required>
+          <el-select
+            v-model="form.status"
+            placeholder="请选择状态"
+            style="width: 100%">
+            <el-option label="启用" :value="true" />
+            <el-option label="禁用" :value="false" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="过期时间" prop="expireTime" requirshurued>
           <el-date-picker
-            v-model="addForm.expireTime"
+            v-model="form.expireTime"
             type="datetime"
-            placeholder="请选择过期时间"
-            style="width: 100%"
-          ></el-date-picker>
+            value-format="timestamp"
+            placeholder="选择过期时间"
+            :disabled-date="disabledDate"
+            :shortcuts="shortcuts"
+            style="width: 100%"/>
         </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input
-            type="textarea"
-            v-model="addForm.remark"
-            :rows="3"
-            placeholder="请输入备注"
-          ></el-input>
+        <el-form-item label="备注" prop="note">
+          <el-input type="textarea" v-model="form.note"></el-input>
         </el-form-item>
       </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="addDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitAddForm">添加</el-button>
+      <div slot="footer">
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitForm">确 定</el-button>
       </div>
     </el-dialog>
 
@@ -210,7 +216,6 @@
 <script>
 import {mapActions, mapState} from 'vuex'
 
-// 将 IP 验证函数移到组件外部
 const isValidIPs = (ip) => {
   const parts = ip.split('.')
   return parts.length === 4 && parts.every(part => {
@@ -313,17 +318,17 @@ export default {
     return {
       searchIP: '',
       searchType: '',
-      editDialogVisible: false,
-      addDialogVisible: false,
-      currentWhitelist: {},
+      dialogVisible: false,
+      dialogType: 'add', // 'add' | 'edit'
       selectedRows: [],
       currentPage: 1,
       pageSize: 50,
-      addForm: {
+      form: {
         ip: '',
         type: '',
+        status: true,
         expireTime: '',
-        remark: ''
+        note: ''
       },
       rules: {
         ip: [
@@ -333,17 +338,23 @@ export default {
         type: [
           {required: true, message: '请输入类别', trigger: 'blur'}
         ],
+        status: [
+          {required: true, message: '请选择状态', trigger: 'change'}
+        ],
         expireTime: [
           {required: true, message: '请选择过期时间', trigger: 'change'},
-          {validator: validateExpireTime, trigger: 'change'}
-        ]
+          {validator: validateExpireTime, trigger: 'blur'}
+        ],
       },
       total: 0,
+      shortcuts: [
+        { text: '1小时后', value: () => new Date(Date.now() + 3600000) },
+        { text: '1天后', value: () => new Date(Date.now() + 86400000) },
+        { text: '1周后', value: () => new Date(Date.now() + 604800000) }
+      ]
     }
   },
   created() {
-    console.log('Store state:', this.$store.state)  // 查看整个 store 状态
-    console.log('WhiteList module:', this.$store.state.whiteLists)  // 查看 whitelist 模块状态
     // this.fetchData()
   },
   methods: {
@@ -377,7 +388,7 @@ export default {
     },
 
     handleStatusChange(row) {
-      const newStatus = row.status === 0 ? 1 : 0
+      const newStatus = !row.status
       const updatedRow = {...row, status: newStatus}
 
       this.updateWhitelist(updatedRow).then(() => {
@@ -479,71 +490,65 @@ export default {
 
     // 处理添加按钮点击
     handleAddClick() {
-      this.addDialogVisible = true
-      // 设置日期选择器的默认时间范围
-      this.$nextTick(() => {
-        const datePicker = this.$refs.addForm.fields.find(field => field.prop === 'expireTime')
-        if (datePicker) {
-          datePicker.$el.querySelector('input').setAttribute('picker-options', JSON.stringify({
-            disabledDate(time) {
-              return time.getTime() < Date.now()
-            }
-          }))
-        }
-      })
+      this.dialogType = 'add'
+      this.dialogVisible = true
     },
 
-    // 重置添加表单
-    resetAddForm() {
-      this.$refs.addForm?.resetFields()
-      this.addForm = {
-        ip: '',
-        type: '',
-        expireTime: '',
-        remark: ''
+    // 打开编辑对话框
+    handleEdit(row) {
+      this.dialogType = 'edit'
+      this.form = {
+        ip: row.ip,
+        type: row.category,
+        status: row.status,
+        expireTime: row.expireTime,
+        note: row.note
+      }
+      this.dialogVisible = true
+    },
+
+    // 提交表单
+    async submitForm() {
+      try {
+        await this.$refs.formRef.validate()
+
+        const params = {
+          ip: this.form.ip,
+          type: this.form.type,
+          status: this.form.status,
+          expireTime: this.form.expireTime,
+          remark: this.form.note
+        }
+
+        if (this.dialogType === 'add') {
+          await this.addWhitelist(params)
+        } else {
+          await this.updateWhitelist(params)
+        }
+
+        this.$message.success('操作成功')
+        this.dialogVisible = false
+        this.fetchData()
+      } catch (error) {
+        console.error('操作失败:', error)
       }
     },
 
-    // 格式化时间戳
-    formatTimestamp(timestamp) {
-      if (!timestamp) return ''
-      const date = new Date(timestamp)
-      const year = date.getFullYear()
-      const month = String(date.getMonth() + 1).padStart(2, '0')
-      const day = String(date.getDate()).padStart(2, '0')
-      const hours = String(date.getHours()).padStart(2, '0')
-      const minutes = String(date.getMinutes()).padStart(2, '0')
-      const seconds = String(date.getSeconds()).padStart(2, '0')
-      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+    // 重置表单
+    resetForm() {
+      this.$refs.formRef?.resetFields()
+      this.form = {
+        ip: '',
+        type: '',
+        status: true,
+        expireTime: '',
+        note: ''
+      }
     },
 
-    // 修改提交表单方法
-    async submitAddForm() {
-      this.$refs.addForm.validate(async (valid) => {
-        if (valid) {
-          try {
-            const formattedIPs = this.addForm.ip
-              .split('\n')
-              .map(ip => ip.trim())
-              .filter(ip => ip)
-              .join('\n')
-
-            const formData = {
-              ...this.addForm,
-              ip: formattedIPs,
-              status: true
-            }
-
-            const addIPs = await this.addWhitelist(formData)
-            this.$message.success('成功添加 ' + addIPs +' 个 IP')
-            this.addDialogVisible = false
-            this.fetchData()
-          } catch (error) {
-            console.log(error)
-            this.$message.error('添加失败')
-          }
-        }
-      })
+    // 禁用今天之前的时间
+    disabledDate(time) {
+      return time.getTime() < Date.now() - 86400000
     },
 
     // 处理搜索
@@ -566,6 +571,19 @@ export default {
 
     handleSelectionChange(val) {
       this.selectedRows = val
+    },
+
+    // 格式化时间戳
+    formatTimestamp(timestamp) {
+      if (!timestamp) return ''
+      const date = new Date(timestamp)
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      const hours = String(date.getHours()).padStart(2, '0')
+      const minutes = String(date.getMinutes()).padStart(2, '0')
+      const seconds = String(date.getSeconds()).padStart(2, '0')
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
     }
   }
 }

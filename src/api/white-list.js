@@ -46,17 +46,17 @@ export function logWhitelistOperation() {
   })
 }
 
-// 编辑白名单（支持批量）
+// 编辑白名单
 export function editWhiteList(data) {
   return request({
     url: '/whitelist/edit',
     method: 'post',
     data: {
-      ip_list: data.ips,
+      ip: data.ip,
       category: data.type,
       expire_time: data.expireTime,
       note: data.remark,
-      status: data.status // todo 不是bool
+      status: data.status
     }
   })
 }
