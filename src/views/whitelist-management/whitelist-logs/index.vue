@@ -32,19 +32,21 @@
         style="width: 100%;"
         height="70vh"
         :loading="loading"
+        :header-cell-style="{'text-align':'center'}"
+        :cell-style="{'text-align': 'center'}"
       >
         <el-table-column label="IP / Cidr" prop="ip" min-width="150"></el-table-column>
-        <el-table-column label="类别" prop="type" min-width="120"></el-table-column>
-        <el-table-column label="备注" prop="remark" min-width="200"></el-table-column>
-        <el-table-column label="变更时间" prop="updateTime" min-width="180">
+        <el-table-column label="类别" prop="category" min-width="120"></el-table-column>
+        <el-table-column label="备注" prop="note" min-width="200"></el-table-column>
+        <el-table-column label="变更时间" prop="time" min-width="180">
           <template slot-scope="scope">
-            {{ formatTimestamp(scope.row.updateTime) }}
+            {{ formatTimestamp(scope.row.time) }}
           </template>
         </el-table-column>
         <el-table-column label="状态" prop="status" min-width="100">
           <template slot-scope="scope">
             <el-tag :type="scope.row.status === 'add' ? 'success' : 'danger'" size="small">
-              {{ scope.row.status === 'add' ? '手动添加' : '删除' }}
+              {{ scope.row.status === 'add' ? '添加' : '删除' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -97,6 +99,15 @@ export default {
         this.total = newVal
       },
       immediate: true
+    },
+    pageSize: {
+      async handler(newVal) {
+        await this.fetchData({
+          page: newVal,
+          size: this.pageSize
+        })
+      },
+      immediate: true
     }
   },
   data() {
@@ -146,15 +157,16 @@ export default {
     async fetchData() {
       try {
         console.log(this.currentPage)
-        const validPage = await this.fetchTableData({
+        await this.fetchTableData({
           page: this.currentPage,
           pageSize: this.pageSize,
           ip: this.searchIP,
           type: this.searchType
         })
-        console.log('有效页码：', validPage)
-        // 更新为有效的页码
-        this.currentPage = validPage
+        if (this.tableData.length === 0 && this.currentPage > 1) {
+          this.currentPage--
+          await this.fetchData()
+        }
       } catch (error) {
         console.error('获取数据失败:', error)
         this.$message.error('获取数据失败')
@@ -162,7 +174,7 @@ export default {
     }
   },
   created() {
-    this.fetchData()
+    // this.fetchData()
   }
 }
 </script>

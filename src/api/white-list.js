@@ -39,10 +39,14 @@ export function deleteWhitelist(ips) {
 }
 
 // 记录白名单操作日志
-export function logWhitelistOperation() {
+export function logWhitelistOperation(page, pageSize) {
   return request({
-    url: '/whitelist/log',
-    method: 'get'
+    url: '/whitelist/log/get',
+    method: 'get',
+    params: {
+      page: page,
+      page_size: pageSize
+    }
   })
 }
 
