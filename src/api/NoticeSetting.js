@@ -39,7 +39,7 @@ export const noticeSettingApi = {
    * @param {string} [params.type] - 通知类型
    * @param {string} [params.status] - 通知状态
    * @param {string} [params.interval] - 通知间隔
-   * @returns {Promise<Notice[]>}
+   * @returns {AxiosPromise}
    */
   getNotices(params = {}) {
     return request({

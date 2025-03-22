@@ -134,7 +134,7 @@
 </template>
 
 <script>import { Message, MessageBox } from 'element-ui'
-import { settingApi } from '@/api/NoticeSetting'
+import { noticeSettingApi } from '@/api/NoticeSetting'
 
 export default {
   data() {
@@ -171,7 +171,7 @@ export default {
       this.loading = true
       try {
         // 传递默认参数（根据实际需求调整）
-        const response = await settingApi.getNotice({
+        const response = await noticeSettingApi.getNotices({
           type: '',
           status: ''
         })
@@ -203,7 +203,7 @@ export default {
         });
 
         // 修复 deleteNotice 参数传递（需确保 API 支持 id 参数）
-        const response = await settingApi.deleteNotice({ id: row.id })
+        const response = await noticeSettingApi.deleteNotice({ id: row.id })
         if (response.data.success) {
           Message.success('删除成功')
           await this.getNoticeList()
@@ -226,7 +226,7 @@ export default {
           }
 
           try {
-            const response = await settingApi.setNotice(formParams)
+            const response = await noticeSettingApi.addNotice(formParams)
             if (response.data.success) {
               Message.success(this.dialogType === 'add' ? '添加成功' : '更新成功')
               this.dialogVisible = false
@@ -264,7 +264,7 @@ export default {
         });
 
         const ids = this.selectedItems.map(item => item.id)
-        const response = await settingApi.deleteNotice({ ids })
+        const response = await noticeSettingApi.deleteNotice({ ids })
         if (response.data.success) {
           Message.success('批量删除成功')
           await this.getNoticeList()
@@ -280,7 +280,7 @@ export default {
         if (valid) {
           const targets = this.batchForm.targets.split('\n').filter(t => t.trim())
           const promises = targets.map(target => {
-            return settingApi.setNotice({
+            return noticeSettingApi.setNotice({
               name: target,
               type: this.batchForm.type,
               interval: '1' // 默认启用状态
