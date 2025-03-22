@@ -1,13 +1,13 @@
 import request from '@/utils/request'
 
 // 获取白名单列表
-export function fetchWhitelist(data) { // todo page
+export function fetchWhitelist(data) {
   return request({
     url: '/whitelist/list',
     method: 'post',
     data: {
       page: data.page,
-      page_size: data.pageSize,
+      pageSize: data.pageSize,
     }
   })
 }
@@ -45,7 +45,7 @@ export function logWhitelistOperation(page, pageSize) {
     method: 'get',
     params: {
       page: page,
-      page_size: pageSize
+      pageSize: pageSize
     }
   })
 }
@@ -79,13 +79,15 @@ export function searchWhileListByIP(ip) {
 }
 
 // 搜索白名单分类
-export function searchWhileListByCategory(category) {
+export function searchWhileListByCategory({category, page, pageSize}) {
   return request(
     {
       url: '/whitelist/search/category',
       method: 'post',
       data: {
-        category: category
+        category: category,
+        page: page,
+        pageSize: pageSize
       }
     }
   )
@@ -105,13 +107,15 @@ export function searchWhileListLogByIP(ip) {
 }
 
 // 搜索白名单操作日志分类
-export function searchWhileListLogByCategory(category) {
+export function searchWhileListLogByCategory({category, page, pageSize}) {
   return request(
     {
       url: '/whitelist/log/search/category',
       method: 'post',
       data: {
-        category: category
+        category: category,
+        page: page,
+        pageSize: pageSize
       }
     }
   )

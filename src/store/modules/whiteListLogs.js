@@ -39,7 +39,7 @@ const actions = {
         return
       }
       if (type) {
-        const { log_info, total } = await searchWhileListLogByCategory(type)
+        const { log_info, total } = await searchWhileListLogByCategory({category: type, page: page, pageSize: pageSize})
         commit('SET_TABLE_DATA', {
           list: log_info,
           total
