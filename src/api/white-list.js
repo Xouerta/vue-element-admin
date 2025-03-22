@@ -42,8 +42,8 @@ export function deleteWhitelist(ips) {
 export function logWhitelistOperation(page, pageSize) {
   return request({
     url: '/whitelist/log/get',
-    method: 'get',
-    params: {
+    method: 'post',
+    data: {
       page: page,
       pageSize: pageSize
     }
