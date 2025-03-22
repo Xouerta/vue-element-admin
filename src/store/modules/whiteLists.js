@@ -62,7 +62,7 @@ const actions = {
       if (ip) {
         const { category, createTime, endTime, note, status } = await searchWhileListByIP(ip)
         commit('SET_TABLE_DATA', {
-          list: [{"category": category, "createTime": createTime , "expireTime": endTime, "ip": ip, "note": note, "status": status}], // todo 确认
+          list: [{"category": category, "createTime": createTime , "expireTime": endTime, "ip": ip, "note": note, "status": status}],
           total: 1
         })
         return
