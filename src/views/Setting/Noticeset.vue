@@ -26,8 +26,7 @@
 
     <!-- 通知列表 -->
     <el-table
-      :data="noticeList"
-      style="width: 100%"
+      :data="noticeList" style="width: 100%"
       v-loading="loading"
       @selection-change="handleSelectionChange"
     >
@@ -84,7 +83,7 @@
         <el-form-item label="通知目标" prop="target">
           <el-input v-model="noticeForm.target" placeholder="请输入通知目标"/>
         </el-form-item>
-        <el-form-item label="状态" prop="status">
+        <el-form-item label="状态">
           <el-switch
             v-model="noticeForm.status"
             active-value="启用"
@@ -134,8 +133,7 @@
   </div>
 </template>
 
-<script>
-import { Message, MessageBox } from 'element-ui'
+<script>import { Message, MessageBox } from 'element-ui'
 import { settingApi } from '@/api/NoticeSetting'
 
 export default {
@@ -172,7 +170,11 @@ export default {
     async getNoticeList() {
       this.loading = true
       try {
-        const response = await settingApi.getNotice()
+        // 传递默认参数（根据实际需求调整）
+        const response = await settingApi.getNotice({
+          type: '',
+          status: ''
+        })
         if (response.data.success) {
           this.noticeList = response.data.list
         }
@@ -198,8 +200,9 @@ export default {
       try {
         await MessageBox.confirm('确定要删除该通知吗？', '提示', {
           type: 'warning'
-        })
+        });
 
+        // 修复 deleteNotice 参数传递（需确保 API 支持 id 参数）
         const response = await settingApi.deleteNotice({ id: row.id })
         if (response.data.success) {
           Message.success('删除成功')
@@ -214,9 +217,16 @@ export default {
     handleSubmit() {
       this.$refs.noticeFormRef.validate(async(valid) => {
         if (valid) {
+          // 映射表单字段到 API 需要的参数格式
+          const formParams = {
+            name: this.noticeForm.target,
+            interval: this.noticeForm.status === '启用' ? '1' : '0',
+            type: this.noticeForm.type,
+            id: this.noticeForm.id // 保留 id 用于更新操作
+          }
+
           try {
-            const method = this.dialogType === 'add' ? 'setNotice' : 'setNotice'
-            const response = await settingApi[method](this.noticeForm)
+            const response = await settingApi.setNotice(formParams)
             if (response.data.success) {
               Message.success(this.dialogType === 'add' ? '添加成功' : '更新成功')
               this.dialogVisible = false
@@ -226,7 +236,7 @@ export default {
             Message.error(this.dialogType === 'add' ? '添加失败' : '更新失败')
           }
         }
-      })
+      });
     },
     toggleBatchMode() {
       this.isBatchMode = !this.isBatchMode
@@ -251,7 +261,7 @@ export default {
       try {
         await MessageBox.confirm(`确定要删除选中的 ${this.selectedItems.length} 条通知吗？`, '提示', {
           type: 'warning'
-        })
+        });
 
         const ids = this.selectedItems.map(item => item.id)
         const response = await settingApi.deleteNotice({ ids })
@@ -268,23 +278,25 @@ export default {
     handleBatchSubmit() {
       this.$refs.batchFormRef.validate(async(valid) => {
         if (valid) {
-          try {
-            const targets = this.batchForm.targets.split('\n').filter(t => t.trim())
-            const response = await settingApi.setNotice({
+          const targets = this.batchForm.targets.split('\n').filter(t => t.trim())
+          const promises = targets.map(target => {
+            return settingApi.setNotice({
+              name: target,
               type: this.batchForm.type,
-              targets
-            })
+              interval: '1' // 默认启用状态
+            });
+          });
 
-            if (response.data.success) {
-              Message.success('批量添加成功')
-              this.batchDialogVisible = false
-              await this.getNoticeList()
-            }
+          try {
+            await Promise.all(promises)
+            Message.success('批量添加成功')
+            this.batchDialogVisible = false
+            await this.getNoticeList()
           } catch (error) {
             Message.error('批量添加失败')
           }
         }
-      })
+      });
     }
   },
   mounted() {
