@@ -112,7 +112,7 @@ export const userApi = {
     return request({
       url: '/auth/user/Info',
       method: 'get',
-      params: {token}
+      params: { token }
     })
   }
 }

@@ -75,6 +75,7 @@
 </template>
 
 <script>
+
 import * as echarts from 'echarts'
 import 'echarts/map/js/world'
 import { dashboardApi, DashboardSocket } from '@/api/dashboard'
@@ -314,7 +315,7 @@ export default {
 <style scoped>
 .attack-dashboard {
   height: 100vh;
-  background: #1b1b1b;
+  background: #ffffff;
   color: #fff;
   padding: 20px;
   box-sizing: border-box;
