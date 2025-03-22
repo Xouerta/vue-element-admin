@@ -68,10 +68,10 @@ const actions = {
         return
       }
       if (type) {
-        const { entries } = await searchWhileListByCategory({category: type, page: page, pageSize: pageSize})
+        const { entries, total } = await searchWhileListByCategory({category: type, page: page, pageSize: pageSize})
         commit('SET_TABLE_DATA', {
           list: entries,
-          total: entries.length
+          total: total
         })
         return
       }

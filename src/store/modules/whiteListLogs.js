@@ -46,7 +46,6 @@ const actions = {
         })
         return
       }
-      console.log('log_info', page, pageSize)
       const { log_info, total } = await logWhitelistOperation(page, pageSize)
 
       commit('SET_TABLE_DATA', {
