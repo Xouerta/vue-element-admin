@@ -39,7 +39,7 @@ export const noticeSettingApi = {
    * @param {string} [params.type] - 通知类型
    * @param {string} [params.status] - 通知状态
    * @param {string} [params.interval] - 通知间隔
-   * @returns {AxiosPromise}
+   * @returns {Promise<{data: Notice[], total: number}>}
    */
   getNotices(params = {}) {
     return request({
@@ -77,7 +77,7 @@ export const noticeSettingApi = {
 
   /**
    * 删除通知
-   * @param {number} id - 通知ID
+   * @param {{ids: any[]}} id - 通知ID
    * @returns {Promise<{msg: string, code: number}>}
    */
   deleteNotice(id) {
@@ -85,7 +85,7 @@ export const noticeSettingApi = {
       url: '/set/deleteNotice',
       method: 'post',
       data: { id }
-    })
+    }).then(response => response.data);
   },
 
   /**

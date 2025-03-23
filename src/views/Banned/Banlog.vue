@@ -84,24 +84,39 @@ export default {
       }
       return statusMap[status] || 'info'
     },
-    async handleSearch() {
+    async handleSearch(attack_ip) {
       this.loading = true
       try {
-        const response = await banlogApi.getLog({
-          ip: this.searchForm.ip,
-          source: this.searchForm.source,
-          page: this.currentPage,
-          pageSize: this.pageSize
-        })
+        const { ip, source } = this.searchForm
+        let response
 
-        if (response.data.success) {
-          this.tableData = response.data.data
-          this.total = response.data.total
+        if (ip && source) {
+          // 综合搜索（需后端支持）
+          response = await banlogApi.getLogs({
+            page: this.currentPage,
+            pageSize: this.pageSize
+          })
+        } else if (ip) {
+          response = await banlogApi.searchLogsByIP(ip, {
+            page: this.currentPage,
+            pageSize: this.pageSize
+          })
+        } else if (source) {
+          response = await banlogApi.searchLogsBySource(source, {
+            page: this.currentPage,
+            pageSize: this.pageSize
+          })
         } else {
-          Message.error(response.data.message || '查询失败')
+          response = await banlogApi.getLogs({
+            page: this.currentPage,
+            pageSize: this.pageSize
+          })
         }
+
+        this.tableData = response.data || []
+        this.total = response.total || 0
       } catch (error) {
-        Message.error('服务器错误，请稍后重试')
+        Message.error(error.message || '查询失败')
       } finally {
         this.loading = false
       }
@@ -120,6 +135,7 @@ export default {
   }
 }
 </script>
+
 
 <style scoped>
 .ban-list-log {

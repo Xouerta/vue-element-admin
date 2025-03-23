@@ -60,7 +60,13 @@
         </template>
       </el-table-column>
     </el-table>
-
+    <!-- 分页 -->
+    <el-pagination
+      class="pagination"
+      @size-change="handlePageChange"
+      :page-sizes="[10, 20, 50]"
+      layout="total, prev, pager, next"
+    />
     <!-- 添加/编辑通知弹窗 -->
     <el-dialog
       :visible.sync="dialogVisible"
@@ -163,25 +169,33 @@ export default {
       batchRules: {
         type: [{ required: true, message: '请选择通知类型', trigger: 'change' }],
         targets: [{ required: true, message: '请输入通知目标', trigger: 'blur' }]
-      }
+      },
     }
   },
   methods: {
     async getNoticeList() {
       this.loading = true
       try {
-        // 传递默认参数（根据实际需求调整）
-        const response = await noticeSettingApi.getNotices({
+        const params = {
           type: '',
-          status: ''
-        })
+          status: '',
+          page: this.currentPage,
+          pageSize: this.pageSize
+        }
+        const response = await noticeSettingApi.getNotices(params)
         if (response.data.success) {
           this.noticeList = response.data.list
+          this.total = response.data.total
         }
       } catch (error) {
         Message.error('获取通知列表失败')
       }
       this.loading = false
+    },
+
+    handlePageChange(page) {
+      this.pageSize = size
+      this.getNoticeList()
     },
     handleAdd() {
       this.dialogType = 'add'
@@ -326,12 +340,12 @@ export default {
 }
 
 /* 操作按钮 */
-.el-button {
+::v-deep .el-button {
   border-radius: 4px;
   transition: background-color 0.3s ease;
 }
 
-.el-button:hover {
+::v-deep .el-button:hover {
   background-color: #ecf5ff;
 }
 

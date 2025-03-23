@@ -207,7 +207,7 @@ export default {
     async handleSearch() {
       this.loading = true
       try {
-        const response = await banlogApi.getLog({
+        const response = await banlogApi.getAlerts({
           ip: this.searchForm.ip,
           source: this.searchForm.source,
           page: this.currentPage,
@@ -245,10 +245,10 @@ export default {
       try {
         await MessageBox.confirm(`确定要删除IP ${row.ip} 吗？`, '提示')
 
-        const response = await banlogApi.deleteBanList({ IP: [row.ip] })
+        const response = await banlogApi.deleteAlertIP({ IP: [row.ip] })
         if (response.data.success) {
           Message.success('删除成功')
-          this.handleSearch()
+          await this.handleSearch()
         } else {
           Message.error(response.data.message || '删除失败')
         }
@@ -265,10 +265,10 @@ export default {
         await MessageBox.confirm(`确定要删除选中的 ${this.selectedRows.length} 个IP吗？`, '提示')
 
         const ips = this.selectedRows.map(row => row.ip)
-        const response = await banlogApi.deleteBanList({ IP: ips })
+        const response = await banlogApi.deleteAlertIP({ IP: ips })
         if (response.data.success) {
           Message.success('批量删除成功')
-          this.handleSearch()
+          await this.handleSearch()
         } else {
           Message.error(response.data.message || '批量删除失败')
         }
@@ -296,16 +296,16 @@ export default {
 
         try {
           if (this.dialogType === 'add') {
-            const response = await banlogApi.setHfishBanList(data)
+            const response = await banlogApi.addAlertIP(data)
             if (response.data.success) {
               Message.success('添加成功')
               this.dialogVisible = false
-              this.handleSearch()
+              await this.handleSearch()
             } else {
               Message.error(response.data.message || '添加失败')
             }
           } else {
-            const response = await banlogApi.setHfishBanList(data)
+            const response = await banlogApi.addAlertIP(data)
             if (response.data.success) {
               Message.success('修改成功')
               this.dialogVisible = false
@@ -333,11 +333,11 @@ export default {
         }
 
         try {
-          const response = await banlogApi.setHfishBanList(data)
+          const response = await banlogApi.addAlertIP(data)
           if (response.data.success) {
             Message.success('批量添加成功')
             this.batchDialogVisible = false
-            this.handleSearch()
+            await this.handleSearch()
           } else {
             Message.error(response.data.message || '批量添加失败')
           }
