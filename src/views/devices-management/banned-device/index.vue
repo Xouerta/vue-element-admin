@@ -33,7 +33,7 @@
           搜索
         </el-button>
       </div>
-      <div class="right-buttons">
+      <div class="right-buttons" v-if="false">
         <el-tooltip content="批量启用" placement="top" :enterable="false">
           <el-button
             icon="el-icon-check"
@@ -66,16 +66,19 @@
       <el-table
         border
         :data="tableData"
+        height="70vh"
         style="width: 100%"
         @selection-change="handleSelectionChange"
+        :header-cell-style="{'text-align':'center'}"
+        :cell-style="{'text-align': 'center'}"
       >
         <el-table-column type="selection" width="55"></el-table-column>
-        <el-table-column label="设备名称" prop="deviceName"></el-table-column>
+        <el-table-column label="设备名称" prop="name"></el-table-column>
         <el-table-column label="Key" prop="key"></el-table-column>
-        <el-table-column label="连接" prop="connection">
+        <el-table-column label="连接" prop="connect">
           <template slot-scope="scope">
-            <el-tag size="small" type="danger" v-if="scope.row.connection === '空闲'">
-              {{ scope.row.connection }}
+            <el-tag :type="scope.row.connect ? 'danger' : 'success'">
+              {{ scope.row.connect ? '空闲' : '连接中' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -84,14 +87,14 @@
             <el-button
               size="mini"
               plain
-              :type="scope.row.status === 0 ? 'success' : 'danger'"
+              :type="scope.row.status ? 'success' : 'danger'"
               @click="handleStatusChange(scope.row)"
             >
-              {{ scope.row.status === 0 ? '启用' : '禁用' }}
+              {{ scope.row.status ? '启用' : '禁用' }}
             </el-button>
           </template>
         </el-table-column>
-        <el-table-column label="备注" prop="remark"></el-table-column>
+        <el-table-column label="备注" prop="note"></el-table-column>
         <el-table-column label="操作" width="150">
           <template slot-scope="scope">
             <el-tooltip content="编辑" placement="top" :enterable="false">
@@ -211,7 +214,8 @@ export default {
       fetchTableData: 'bannedDevices/fetchTableData',
       updateDevice: 'bannedDevices/updateDevice',
       deleteDevice: 'bannedDevices/deleteDevice',
-      addDevice: 'bannedDevices/addDevice'
+      addDevice: 'bannedDevices/addDevice',
+      deviceInfo: 'bannedDevices/deviceInfo'
     }),
 
     async fetchData() {
@@ -221,6 +225,14 @@ export default {
           pageSize: this.pageSize,
           query: this.searchQuery
         })
+        if (this.tableData.length === 0 && this.currentPage > 1) {
+          this.currentPage--
+          await this.fetchData()
+        }
+        this.$store.state.bannedDevices.tableData
+          .map(row => {
+            this.deviceInfo(row.name)
+          })
       } catch (error) {
         console.error('获取数据失败:', error)
         this.$message.error('获取数据失败')
@@ -245,11 +257,14 @@ export default {
         this.$message.success('添加成功')
         this.addDialogVisible = false
         this.fetchData() // 刷新数据
+      }).catch(() => {
+        this.$message.error('添加失败')
       })
     },
 
     // 处理编辑对话框提交
     handleEditSubmit(formData) {
+      console.log(formData)
       this.updateDevice(formData).then(() => {
         this.$message.success('编辑成功')
         this.editDialogVisible = false
@@ -276,8 +291,9 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        this.deleteDevice(row.deviceName).then(() => {
+        this.deleteDevice(row.name).then(() => {
           this.$message.success('删除成功')
+          this.fetchData()
         })
       }).catch(() => {
       })
@@ -329,7 +345,7 @@ export default {
     // 修改状态切换处理方法
     handleStatusChange(row) {
       // 切换状态值
-      const newStatus = row.status === 0 ? 1 : 0
+      const newStatus = !row.status
       const updatedRow = { ...row, status: newStatus }
 
       this.updateDevice(updatedRow).then(() => {

@@ -1,3 +1,12 @@
+import {
+  deleteDevice,
+  fetchList,
+  addDevice,
+  searchDevice,
+  getDeviceInfo,
+  editDevice
+} from '@/api/ban-device'
+
 const state = {
   tableData: [],
   total: 0
@@ -18,55 +27,58 @@ const mutations = {
   ADD_DEVICE(state, device) {
     state.tableData.push(device)
     state.total++
+  },
+  DEVICE_INFO(state, {name, connect, ip, key, note, status}) {
+    state.tableData = state.tableData.map(item => {
+      if (item.name === name) {
+        return {
+          ...item,
+          connect: connect,
+          ip: ip,
+          key: key,
+          note: note,
+          status: status
+        }
+      }
+      return item
+    })
   }
 }
 
 const actions = {
   // 获取设备列表
-  fetchTableData({commit}) {
-    // 这里可以添加API调用
-    // const response = await api.getDeviceList()
+  async fetchTableData({commit}, {page, pageSize, query}) {
+    if (query) {
+      const {devices} = await searchDevice(query)
+      commit('SET_TABLE_DATA', {
+        list: devices,
+        total: devices.length
+      })
+      return
+    }
+    const {total, devices} = await fetchList({page, pageSize})
     commit('SET_TABLE_DATA', {
-      list: [{
-        deviceName: '长亭1',
-        key: 'sk-*****rwS',
-        connection: '空闲',
-        status: '应用',
-        remark: 'sk-TnBYAIOJj84ERrwS'
-      },
-        {
-          deviceName: '长亭2',
-          key: 'sk-*****rwS',
-          connection: '空闲',
-          status: '应用',
-          remark: 'sk-TnBYAIOJj84ERrwS'
-        }, {
-          deviceName: '长亭3',
-          key: 'sk-*****rwS',
-          connection: '空闲',
-          status: '应用',
-          remark: 'sk-TnBYAIOJj84ERrwS'
-        }
-      ], total: 3
+      list: devices,
+      total: total
     })
   },
   // 更新设备
   updateDevice({commit, state}, device) {
-    const index = state.tableData.findIndex(item => item.deviceName === device.deviceName) // todo 优化Name
-    if (index !== -1) {
-      commit('UPDATE_DEVICE', {index, device})
-    }
+    editDevice(device)
   },
   // 删除设备
-  deleteDevice({commit, state}, deviceName) {
-    const index = state.tableData.findIndex(item => item.deviceName === deviceName)
-    if (index !== -1) {
-      commit('DELETE_DEVICE', index)
-    }
+  async deleteDevice({commit, state}, name) {
+    await deleteDevice(name)
   },
   // 添加设备
-  addDevice({commit}, device) {
-    commit('ADD_DEVICE', device)
+  async addDevice({commit}, device) {
+    const {key} = await addDevice(device)
+    commit('ADD_DEVICE', {...device, key: key})
+  },
+  async deviceInfo({commit}, name) {
+    const {info} = await getDeviceInfo(name)
+    const {connect, ip, key, note, status} = info
+    commit('DEVICE_INFO', {name, connect, ip, key, note, status})
   }
 }
 export default {
