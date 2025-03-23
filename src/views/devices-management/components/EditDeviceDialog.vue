@@ -14,7 +14,7 @@
     >
       <el-form-item label="设备名称">
         <el-input
-          v-model="formData.deviceName"
+          v-model="formData.name"
           placeholder="请输入设备名称"
         ></el-input>
       </el-form-item>
@@ -24,15 +24,15 @@
           v-model="formData.status"
           active-text="启用"
           inactive-text="禁用"
-          :active-value="0"
-          :inactive-value="1"
+          :active-value="true"
+          :inactive-value="false"
         >
         </el-switch>
       </el-form-item>
 
       <el-form-item label="备注">
         <el-input
-          v-model="formData.remark"
+          v-model="formData.note"
           type="textarea"
           :rows="4"
           placeholder="请输入备注"
@@ -63,21 +63,21 @@ export default {
       type: Object,
       required: true,
       default: () => ({
-        deviceName: '',
-        status: 0,
-        remark: ''
+        name: '',
+        status: true,
+        note: ''
       })
     }
   },
   data() {
     return {
       formData: {
-        deviceName: '',
-        status: 0,
-        remark: ''
+        name: '',
+        status: '',
+        note: ''
       },
       rules: {
-        deviceName: [
+        name: [
           { required: true, message: '请输入设备名称', trigger: 'blur' },
           { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
         ]

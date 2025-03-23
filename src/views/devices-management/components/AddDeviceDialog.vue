@@ -19,9 +19,16 @@
         />
       </el-form-item>
 
+      <el-form-item label="设备ip" prop="ip">
+        <el-input
+          v-model="formData.ip"
+          placeholder="设备ip"
+          />
+      </el-form-item>
+
       <el-form-item label="备注">
         <el-input
-          v-model="formData.remark"
+          v-model="formData.note"
           type="textarea"
           :rows="4"
           placeholder="请输入备注"
@@ -37,6 +44,14 @@
 </template>
 
 <script>
+const isValidIPs = (ip) => {
+  const parts = ip.split('.')
+  return parts.length === 4 && parts.every(part => {
+    const num = parseInt(part)
+    return num >= 0 && num <= 255 && part === num.toString()
+  })
+}
+
 export default {
   name: 'AddDeviceDialog',
   props: {
@@ -50,17 +65,66 @@ export default {
     }
   },
   data() {
+    const validateIPs = (rule, value, callback) => {
+      if (!value) {
+        callback(new Error('请输入IP列表'))
+        return
+      }
+
+      const ips = value.split('\n').filter(ip => ip.trim())
+      if (ips.length === 0) {
+        callback(new Error('请输入至少一个IP地址'))
+        return
+      }
+
+      // IP地址正则表达式
+      const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/
+      // CIDR格式正则表达式
+      const cidrRegex = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/
+
+      for (const ip of ips) {
+        const trimmedIP = ip.trim()
+        if (cidrRegex.test(trimmedIP)) {
+          // 检查CIDR格式
+          const [ipPart, prefix] = trimmedIP.split('/')
+          const prefixNum = parseInt(prefix)
+          if (prefixNum < 0 || prefixNum > 32) {
+            callback(new Error(`无效的CIDR前缀: ${trimmedIP}`))
+            return
+          }
+          if (!isValidIPs(ipPart)) {
+            callback(new Error(`无效的IP地址: ${ipPart}`))
+            return
+          }
+        } else if (ipRegex.test(trimmedIP)) {
+          // 检查普通IP格式
+          if (!isValidIPs(trimmedIP)) {
+            callback(new Error(`无效的IP地址: ${trimmedIP}`))
+            return
+          }
+        } else {
+          callback(new Error(`无效的IP格式: ${trimmedIP}`))
+          return
+        }
+      }
+      callback()
+    }
     return {
       formData: {
         name: '',
-        remark: ''
+        note: '',
+        ip: ''
       },
       rules: {
         name: [
           { required: true, message: '请输入设备名称', trigger: 'blur' },
           { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
+        ],
+        ip:[
+          {required: true, message: '请输入设备ip', trigger: 'blur'},
+          {validator: validateIPs, trigger: 'blur'}
         ]
-      }
+      },
     }
   },
   methods: {

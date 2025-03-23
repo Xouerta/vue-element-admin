@@ -33,7 +33,7 @@
           搜索
         </el-button>
       </div>
-      <div class="right-buttons">
+      <div class="right-buttons" v-if="false">
         <el-tooltip content="批量启用" placement="top" :enterable="false">
           <el-button
             icon="el-icon-check"
@@ -67,15 +67,18 @@
         border
         :data="tableData"
         style="width: 100%"
+        height="70vh"
         @selection-change="handleSelectionChange"
+        :header-cell-style="{'text-align':'center'}"
+        :cell-style="{'text-align': 'center'}"
       >
         <el-table-column type="selection" width="55"></el-table-column>
-        <el-table-column label="设备名称" prop="deviceName"></el-table-column>
+        <el-table-column label="设备名称" prop="name"></el-table-column>
         <el-table-column label="Key" prop="key"></el-table-column>
-        <el-table-column label="连接" prop="connection">
+        <el-table-column label="连接" prop="connect">
           <template slot-scope="scope">
-            <el-tag size="small" type="danger" v-if="scope.row.connection === '空闲'">
-              {{ scope.row.connection }}
+            <el-tag :type="scope.row.connect ? 'danger' : 'success'">
+              {{ scope.row.connect ? '空闲' : '连接中' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -84,14 +87,14 @@
             <el-button
               size="mini"
               plain
-              :type="scope.row.status === 0 ? 'success' : 'danger'"
+              :type="scope.row.status ? 'success' : 'danger'"
               @click="handleStatusChange(scope.row)"
             >
-              {{ scope.row.status === 0 ? '启用' : '禁用' }}
+              {{ scope.row.status ? '启用' : '禁用' }}
             </el-button>
           </template>
         </el-table-column>
-        <el-table-column label="备注" prop="remark"></el-table-column>
+        <el-table-column label="备注" prop="note"></el-table-column>
         <el-table-column label="操作" width="150">
           <template slot-scope="scope">
             <el-tooltip content="编辑" placement="top" :enterable="false">
@@ -161,8 +164,8 @@
 </template>
 
 /*
- * 设备管理页面
- * 启用 0 禁用 1
+* 设备管理页面
+* 启用 0 禁用 1
 */
 <script>
 import {mapActions, mapState} from 'vuex'
@@ -187,7 +190,8 @@ export default {
         this.total = newVal
       },
       immediate: true
-    }
+    },
+
   },
   data() {
     return {
@@ -198,7 +202,7 @@ export default {
       selectedRows: [],
       currentPage: 1,
       pageSize: 50,
-      total: 0
+      total: 0,
     }
   },
   created() {
@@ -209,7 +213,8 @@ export default {
       fetchTableData: 'alarmDevices/fetchTableData',
       updateDevice: 'alarmDevices/updateDevice',
       deleteDevice: 'alarmDevices/deleteDevice',
-      addDevice: 'alarmDevices/addDevice'
+      addDevice: 'alarmDevices/addDevice',
+      deviceDoc: 'alarmDevices/deviceDoc'
     }),
 
     async fetchData() {
@@ -219,6 +224,14 @@ export default {
           pageSize: this.pageSize,
           query: this.searchQuery
         })
+        if (this.tableData.length === 0 && this.currentPage > 1) {
+          this.currentPage--
+          await this.fetchData()
+        }
+        this.$store.state.alarmDevices.tableData
+          .map(row => {
+            this.deviceDoc(row.name)
+          })
       } catch (error) {
         console.error('获取数据失败:', error)
         this.$message.error('获取数据失败')
@@ -274,8 +287,9 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        this.deleteDevice(row.deviceName).then(() => {
+        this.deleteDevice(row.name).then(async () => {
           this.$message.success('删除成功')
+          await this.fetchData()
         })
       }).catch(() => {
       })
@@ -296,7 +310,8 @@ export default {
           this.selectedRows.map(row => this.deleteDevice(row.deviceName))
         ).then(() => {
           this.$message.success('批量删除成功')
-        }).catch(() => {})
+        }).catch(() => {
+        })
       })
     },
 
@@ -327,11 +342,11 @@ export default {
     // 修改状态切换处理方法
     handleStatusChange(row) {
       // 切换状态值
-      const newStatus = row.status === 0 ? 1 : 0
-      const updatedRow = { ...row, status: newStatus }
+      const newStatus = !row.status
+      const updatedRow = {...row, status: newStatus}
 
       this.updateDevice(updatedRow).then(() => {
-        row.status = newStatus // 更新成功后修改状态
+        row.status = newStatus
         this.$message.success('状态更新成功')
       }).catch(() => {
         this.$message.error('状态更新失败')
@@ -351,7 +366,7 @@ export default {
       }).then(() => {
         Promise.all(
           this.selectedRows.map(row => {
-            const updatedRow = { ...row, status: 0 }
+            const updatedRow = {...row, status: 0}
             return this.updateDevice(updatedRow)
           })
         ).then(() => {
@@ -360,7 +375,8 @@ export default {
         }).catch(() => {
           this.$message.error('批量启用失败')
         })
-      }).catch(() => {})
+      }).catch(() => {
+      })
     },
 
     // 处理批量禁用
@@ -376,7 +392,7 @@ export default {
       }).then(() => {
         Promise.all(
           this.selectedRows.map(row => {
-            const updatedRow = { ...row, status: 1 }
+            const updatedRow = {...row, status: 1}
             return this.updateDevice(updatedRow)
           })
         ).then(() => {
@@ -385,7 +401,8 @@ export default {
         }).catch(() => {
           this.$message.error('批量禁用失败')
         })
-      }).catch(() => {})
+      }).catch(() => {
+      })
     }
   }
 }
