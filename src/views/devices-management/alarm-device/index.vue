@@ -74,6 +74,7 @@
       >
         <el-table-column type="selection" width="55"></el-table-column>
         <el-table-column label="设备名称" prop="name"></el-table-column>
+        <el-table-column label="设备ip" prop="ip"></el-table-column>
         <el-table-column label="Key" prop="key"></el-table-column>
         <el-table-column label="连接" prop="connect">
           <template slot-scope="scope">
