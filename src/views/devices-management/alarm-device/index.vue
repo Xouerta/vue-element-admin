@@ -256,6 +256,8 @@ export default {
         this.$message.success('添加成功')
         this.addDialogVisible = false
         this.fetchData() // 刷新数据
+      }).catch(() => {
+        this.$message.error('添加失败')
       })
     },
 
