@@ -144,7 +144,8 @@
         >
         </el-option>
       </el-select>
-      <el-button size="small" plain>前往</el-button>
+      <el-input v-model="gotoPage" size="small" style="width: 4rem"></el-input>
+      <el-button size="small" plain @click="handleGoTo">前往</el-button>
     </div>
 
     <!-- 分开定义两个对话框 -->
@@ -204,7 +205,8 @@ export default {
       selectedRows: [],
       currentPage: 1,
       pageSize: 50,
-      total: 0
+      total: 0,
+      gotoPage: ''
     }
   },
   created() {
@@ -218,6 +220,13 @@ export default {
       addDevice: 'bannedDevices/addDevice',
       deviceInfo: 'bannedDevices/deviceInfo'
     }),
+
+    handleGoTo() {
+      if (this.gotoPage > 0 && this.gotoPage <= this.total / this.pageSize) {
+        this.currentPage = parseInt(this.gotoPage)
+        this.fetchData()
+      }
+    },
 
     async fetchData() {
       try {

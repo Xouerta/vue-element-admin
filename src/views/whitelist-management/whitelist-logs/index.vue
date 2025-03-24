@@ -76,13 +76,15 @@
         >
         </el-option>
       </el-select>
-      <el-button size="small" plain>前往</el-button>
+      <el-input v-model="gotoPage" size="small" style="width: 4rem"></el-input>
+      <el-button size="small" plain @click="handleGoTo">前往</el-button>
     </div>
   </div>
 </template>
 
 <script>
 import { mapState, mapActions } from 'vuex'
+import {int} from "mockjs/src/mock/random/basic";
 
 export default {
   name: "WhitelistLogs",
@@ -116,7 +118,8 @@ export default {
       searchType: '',
       currentPage: 1,
       pageSize: 50,
-      total: 0
+      total: 0,
+      gotoPage: ''
     }
   },
   methods: {
@@ -142,7 +145,6 @@ export default {
     },
 
     handleCurrentChange(val) {
-      console.log('当前页码：', val)
       this.currentPage = val
       this.fetchData()
     },
@@ -154,9 +156,15 @@ export default {
       await this.fetchData()
     },
 
+    handleGoTo() {
+      if (this.gotoPage > 0 && this.gotoPage <= this.total / this.pageSize) {
+        this.currentPage = parseInt(this.gotoPage)
+        this.fetchData()
+      }
+    },
+
     async fetchData() {
       try {
-        console.log(this.currentPage)
         await this.fetchTableData({
           page: this.currentPage,
           pageSize: this.pageSize,
