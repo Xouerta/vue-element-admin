@@ -156,7 +156,8 @@
         >
         </el-option>
       </el-select>
-      <el-button size="small" plain>前往</el-button>
+      <el-input v-model="gotoPage" size="small" style="width: 4rem"></el-input>
+      <el-button size="small" plain @click="handleGoTo">前往</el-button>
     </div>
 
     <!-- 统一编辑对话框 -->
@@ -351,7 +352,8 @@ export default {
         { text: '1小时后', value: () => new Date(Date.now() + 3600000) },
         { text: '1天后', value: () => new Date(Date.now() + 86400000) },
         { text: '1周后', value: () => new Date(Date.now() + 604800000) }
-      ]
+      ],
+      gotoPage: ''
     }
   },
   created() {
@@ -367,6 +369,13 @@ export default {
       batchDisable: 'whiteLists/batchDisable',
       batchDelete: 'whiteLists/batchDelete'
     }),
+
+    handleGoTo() {
+      if (this.gotoPage > 0 && this.gotoPage <= this.total / this.pageSize) {
+        this.currentPage = parseInt(this.gotoPage)
+        this.fetchData()
+      }
+    },
 
     async fetchData() {
       try {
