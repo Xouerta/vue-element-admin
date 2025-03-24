@@ -39,6 +39,10 @@
           >
             <i class="el-icon-delete"></i>
           </el-button>
+          <!-- 新增批量设置按钮 -->
+          <el-button type="primary" plain @click="handleBatchSet">
+            <i class="el-icon-setting"></i>
+          </el-button>
         </el-button-group>
       </div>
     </div>
@@ -98,9 +102,17 @@
       :title="dialogType === 'add' ? '添加封禁IP' : '编辑封禁IP'"
       width="500px"
     >
-      <el-form :model="formData" :rules="formRules" ref="formRef" label-width="100px">
+      <el-form
+        :model="formData"
+        :rules="formRules"
+        ref="formRef"
+        label-width="100px"
+      >
         <el-form-item label="IP地址" prop="ip">
-          <el-input v-model="formData.ip" :disabled="dialogType === 'edit'"/>
+          <el-input
+            v-model="formData.ip"
+            :disabled="dialogType === 'edit'"
+          />
         </el-form-item>
         <el-form-item label="来源" prop="source">
           <el-select v-model="formData.source" style="width: 100%">
@@ -123,6 +135,20 @@
         <el-form-item label="备注" prop="remark">
           <el-input type="textarea" v-model="formData.remark"/>
         </el-form-item>
+        <!-- 新增字段 -->
+        <el-form-item label="状态">
+          <el-switch
+            v-model="formData.status"
+            active-text="启用"
+            inactive-text="禁用"
+          />
+        </el-form-item>
+        <el-form-item label="攻击方式" prop="Weapons">
+          <el-input v-model="formData.Weapons"/>
+        </el-form-item>
+        <el-form-item label="被攻击资产" prop="UnderAttack">
+          <el-input v-model="formData.UnderAttack"/>
+        </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -136,7 +162,12 @@
       title="批量添加IP"
       width="500px"
     >
-      <el-form :model="batchForm" :rules="batchRules" ref="batchFormRef" label-width="100px">
+      <el-form
+        :model="batchForm"
+        :rules="batchRules"
+        ref="batchFormRef"
+        label-width="100px"
+      >
         <el-form-item label="IP列表" prop="ips">
           <el-input
             type="textarea"
@@ -151,8 +182,52 @@
         <el-button type="primary" @click="handleBatchSubmit">确定</el-button>
       </span>
     </el-dialog>
+
+    <!-- 新增批量设置弹窗 -->
+    <el-dialog
+      :visible.sync="batchSetDialogVisible"
+      title="批量设置封禁列表"
+      width="500px"
+    >
+      <el-form
+        :model="batchSetForm"
+        :rules="batchSetRules"
+        ref="batchSetFormRef"
+        label-width="100px"
+      >
+        <el-form-item label="IP列表" prop="ips">
+          <el-input
+            type="textarea"
+            v-model="batchSetForm.ips"
+            placeholder="请输入IP，每行一个"
+            :rows="5"
+          />
+        </el-form-item>
+        <el-form-item label="过期时间" prop="expireTime">
+          <el-date-picker
+            v-model="batchSetForm.expireTime"
+            type="datetime"
+            placeholder="选择过期时间"
+          />
+        </el-form-item>
+        <el-form-item label="被攻击资产" prop="UnderAttack">
+          <el-input v-model="batchSetForm.UnderAttack"/>
+        </el-form-item>
+        <el-form-item label="攻击方式" prop="Weapons">
+          <el-input v-model="batchSetForm.Weapons"/>
+        </el-form-item>
+        <el-form-item label="备注" prop="note">
+          <el-input type="textarea" v-model="batchSetForm.note"/>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="batchSetDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleBatchSetSubmit">确定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
+
 
 <script>
 import { Message, MessageBox } from 'element-ui'
@@ -178,7 +253,10 @@ export default {
         source: 'manual',
         expireType: 'never',
         expireTime: '',
-        remark: ''
+        remark: '',
+        UnderAttack: '', // 被攻击资产
+        Weapons: '',     // 攻击方式
+        status: false    // 封禁状态（布尔值）
       },
       formRules: {
         ip: [
@@ -187,6 +265,12 @@ export default {
         ],
         source: [
           { required: true, message: '请选择来源', trigger: 'change' }
+        ],
+        Weapons: [
+          { required: true, message: '请输入攻击方式', trigger: 'blur' }
+        ],
+        UnderAttack: [
+          { required: true, message: '请输入被攻击资产', trigger: 'blur' }
         ]
       },
       batchDialogVisible: false,
@@ -197,6 +281,18 @@ export default {
         ips: [
           { required: true, message: '请输入IP地址列表', trigger: 'blur' }
         ]
+      },
+      batchSetDialogVisible: false,
+      batchSetForm: {
+        ips: '',
+        expireTime: '',
+        UnderAttack: '',
+        Weapons: '',
+        note: ''
+      },
+      batchSetRules: {
+        ips: [{ required: true, message: '请输入IP列表', trigger: 'blur' }],
+        expireTime: [{ required: true, message: '请选择过期时间', trigger: 'blur' }]
       }
     }
   },
@@ -207,13 +303,13 @@ export default {
     async handleSearch() {
       this.loading = true
       try {
-        const response = await banlogApi.getAlerts({
+        const params = {
           ip: this.searchForm.ip,
           source: this.searchForm.source,
           page: this.currentPage,
           pageSize: this.pageSize
-        })
-
+        }
+        const response = await banlogApi.getAlerts(params)
         if (response.data.success) {
           this.tableData = response.data.data
           this.total = response.data.total
@@ -228,23 +324,35 @@ export default {
     },
     handleAddIP() {
       this.dialogType = 'add'
-      this.formData.ip = ''
-      this.formData.source = 'manual'
-      this.formData.expireType = 'never'
-      this.formData.expireTime = ''
-      this.formData.remark = ''
+      this.formData = {
+        ip: '',
+        source: 'manual',
+        expireType: 'never',
+        expireTime: '',
+        remark: '',
+        UnderAttack: '',
+        Weapons: '',
+        status: false
+      }
       this.dialogVisible = true
     },
     handleEdit(row) {
       this.dialogType = 'edit'
-      Object.assign(this.formData, row)
-      this.formData.expireType = row.expireTime ? 'custom' : 'never'
+      Object.assign(this.formData, {
+        ip: row.ip,
+        source: row.source,
+        remark: row.remark || '',
+        UnderAttack: row.targetAsset || row.UnderAttack || '',
+        Weapons: row.attackType || row.Weapons || '',
+        status: row.status === '启用' || row.status,
+        expireType: row.expireTime ? 'custom' : 'never',
+        expireTime: row.expireTime || ''
+      })
       this.dialogVisible = true
     },
     async handleDelete(row) {
       try {
         await MessageBox.confirm(`确定要删除IP ${row.ip} 吗？`, '提示')
-
         const response = await banlogApi.deleteAlertIP({ IP: [row.ip] })
         if (response.data.success) {
           Message.success('删除成功')
@@ -253,17 +361,13 @@ export default {
           Message.error(response.data.message || '删除失败')
         }
       } catch (error) {
-        if (error !== 'cancel') {
-          Message.error('删除失败')
-        }
+        if (error !== 'cancel') Message.error('删除失败')
       }
     },
     async handleBatchDelete() {
       if (!this.selectedRows.length) return
-
       try {
         await MessageBox.confirm(`确定要删除选中的 ${this.selectedRows.length} 个IP吗？`, '提示')
-
         const ips = this.selectedRows.map(row => row.ip)
         const response = await banlogApi.deleteAlertIP({ IP: ips })
         if (response.data.success) {
@@ -273,9 +377,7 @@ export default {
           Message.error(response.data.message || '批量删除失败')
         }
       } catch (error) {
-        if (error !== 'cancel') {
-          Message.error('批量删除失败')
-        }
+        if (error !== 'cancel') Message.error('批量删除失败')
       }
     },
     handleBatchAdd() {
@@ -285,15 +387,13 @@ export default {
     async handleSubmit() {
       this.$refs.formRef.validate(async valid => {
         if (!valid) return
-
         const data = {
           IP: [this.formData.ip],
           expireTime: this.formData.expireType === 'custom' ? this.formData.expireTime : null,
-          UnderAttack: this.formData.targetAsset,
-          Weapons: this.formData.attackType,
+          UnderAttack: this.formData.UnderAttack,
+          Weapons: this.formData.Weapons,
           note: this.formData.remark
         }
-
         try {
           if (this.dialogType === 'add') {
             const response = await banlogApi.addAlertIP(data)
@@ -305,11 +405,19 @@ export default {
               Message.error(response.data.message || '添加失败')
             }
           } else {
-            const response = await banlogApi.addAlertIP(data)
+            const editData = {
+              attack_ip: this.formData.ip,
+              status: this.formData.status,
+              end_Time: data.expireTime || '',
+              attacked_asset: data.UnderAttack,
+              attack_method: data.Weapons,
+              note: data.note
+            }
+            const response = await banlogApi.editAlert(editData)
             if (response.data.success) {
               Message.success('修改成功')
               this.dialogVisible = false
-              this.handleSearch()
+              await this.handleSearch()
             } else {
               Message.error(response.data.message || '修改失败')
             }
@@ -319,30 +427,41 @@ export default {
         }
       })
     },
-    async handleBatchSubmit() {
-      this.$refs.batchFormRef.validate(async valid => {
+    handleBatchSet() {
+      this.batchSetForm = {
+        ips: '',
+        expireTime: '',
+        UnderAttack: '',
+        Weapons: '',
+        note: ''
+      }
+      this.batchSetDialogVisible = true
+    },
+    async handleBatchSetSubmit() {
+      this.$refs.batchSetFormRef.validate(async valid => {
         if (!valid) return
-
-        const ips = this.batchForm.ips.split('\n').map(ip => ip.trim()).filter(ip => ip)
+        const ips = this.batchSetForm.ips
+          .split('\n')
+          .map(ip => ip.trim())
+          .filter(ip => ip)
         const data = {
           IP: ips,
-          expireTime: null, // 根据需求设置过期时间
-          UnderAttack: '', // 根据需求设置被攻击资产
-          Weapons: '', // 根据需求设置攻击方式
-          note: '' // 根据需求设置备注
+          expireTime: this.batchSetForm.expireTime,
+          UnderAttack: this.batchSetForm.UnderAttack,
+          Weapons: this.batchSetForm.Weapons,
+          note: this.batchSetForm.note
         }
-
         try {
-          const response = await banlogApi.addAlertIP(data)
+          const response = await banlogApi.setBanList(data)
           if (response.data.success) {
-            Message.success('批量添加成功')
-            this.batchDialogVisible = false
+            Message.success('批量设置成功')
+            this.batchSetDialogVisible = false
             await this.handleSearch()
           } else {
-            Message.error(response.data.message || '批量添加失败')
+            Message.error('批量设置失败')
           }
         } catch (error) {
-          Message.error('批量操作失败')
+          Message.error('操作失败，请重试')
         }
       })
     },
@@ -356,6 +475,34 @@ export default {
     handleCurrentChange(val) {
       this.currentPage = val
       this.handleSearch()
+    },
+    async handleBatchSubmit() {
+      this.$refs.batchFormRef.validate(async valid => {
+        if (!valid) return
+        const ips = this.batchForm.ips
+          .split('\n')
+          .map(ip => ip.trim())
+          .filter(ip => ip)
+        const data = {
+          IP: ips,
+          expireTime: null,
+          UnderAttack: '',
+          Weapons: '',
+          note: ''
+        }
+        try {
+          const response = await banlogApi.addAlertIP(data)
+          if (response.data.success) {
+            Message.success('批量添加成功')
+            this.batchDialogVisible = false
+            await this.handleSearch()
+          } else {
+            Message.error(response.data.message || '批量添加失败')
+          }
+        } catch (error) {
+          Message.error('批量操作失败')
+        }
+      })
     }
   },
   mounted() {
@@ -363,6 +510,7 @@ export default {
   }
 }
 </script>
+
 
 <style scoped>
 .ban-ip-management {

@@ -7,6 +7,9 @@
           <i class="el-icon-plus"></i>
           添加通知
         </el-button>
+        <!-- 新增机器人状态显示 -->
+        <el-tag class="ml-3" type="success" v-if="robotStatus">机器人已启用</el-tag>
+        <el-tag class="ml-3" type="info" v-else>机器人未启用</el-tag>
       </div>
 
       <div class="right-operations">
@@ -14,13 +17,11 @@
           {{ isBatchMode ? '退出批量管理' : '批量管理' }}
         </el-button>
         <template v-if="isBatchMode">
-          <el-button type="primary" @click="handleBatchAdd">
-            批量添加
-          </el-button>
-          <el-button type="danger" @click="handleBatchDelete">
-            批量删除
-          </el-button>
+          <el-button type="primary" @click="handleBatchAdd">批量添加</el-button>
+          <el-button type="danger" @click="handleBatchDelete">批量删除</el-button>
         </template>
+        <!-- 新增获取日报按钮 -->
+        <el-button type="primary" @click="handleGetReport">获取日报总结</el-button>
       </div>
     </div>
 
@@ -139,7 +140,8 @@
   </div>
 </template>
 
-<script>import { Message, MessageBox } from 'element-ui'
+<script>
+import { Message, MessageBox } from 'element-ui'
 import { noticeSettingApi } from '@/api/NoticeSetting'
 
 export default {
@@ -155,7 +157,7 @@ export default {
         id: '',
         type: '',
         target: '',
-        status: '启用'
+        status: '启用' // 状态字段保持字符串格式（前端显示用）
       },
       noticeRules: {
         type: [{ required: true, message: '请选择通知类型', trigger: 'change' }],
@@ -170,9 +172,94 @@ export default {
         type: [{ required: true, message: '请选择通知类型', trigger: 'change' }],
         targets: [{ required: true, message: '请输入通知目标', trigger: 'blur' }]
       },
+      robotStatus: false, // 新增机器人状态字段
+      currentPage: 1, // 新增分页参数
+      pageSize: 10 // 新增分页参数
     }
   },
   methods: {
+    // 新增获取日报方法
+    async handleGetReport() {
+      try {
+        const response = await noticeSettingApi.getReport()
+        const url = window.URL.createObjectURL(new Blob([response]))
+        const link = document.createElement('a')
+        link.href = url
+        link.setAttribute('download', '日报总结.pdf')
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+      } catch (error) {
+        Message.error('获取日报失败')
+      }
+    },
+
+    // 新增获取机器人状态方法
+    async getRobotStatus() {
+      try {
+        const response = await noticeSettingApi.getRobotStatus()
+        this.robotStatus = response.data.status // 假设返回 { status: true }
+      } catch (error) {
+        Message.error('获取机器人状态失败')
+      }
+    },
+
+    // 修改删除通知参数
+    async handleDelete(row) {
+      try {
+        await MessageBox.confirm('确定要删除该通知吗？', '提示', {
+          type: 'warning'
+        })
+        const response = await noticeSettingApi.deleteNotice({ ids: [row.id] })
+        if (response.data.success) {
+          Message.success('删除成功')
+          await this.getNoticeList()
+        }
+      } catch (error) {
+        if (error !== 'cancel') {
+          Message.error('删除失败')
+        }
+      }
+    },
+
+    // 修改 handleSubmit 使用 editNotice 并处理状态转换
+    async handleSubmit() {
+      this.$refs.noticeFormRef.validate(async(valid) => {
+        if (valid) {
+          const formParams = {
+            id: this.noticeForm.id,
+            type: this.noticeForm.type,
+            target: this.noticeForm.target,
+            status: this.noticeForm.status === '启用' ? 1 : 0 // 转换为后端需要的数字
+          }
+
+          try {
+            if (this.dialogType === 'add') {
+              await noticeSettingApi.addNotice(formParams)
+            } else {
+              await noticeSettingApi.editNotice(formParams)
+            }
+            Message.success(this.dialogType === 'add' ? '添加成功' : '更新成功')
+            this.dialogVisible = false
+            await this.getNoticeList()
+          } catch (error) {
+            Message.error(this.dialogType === 'add' ? '添加失败' : '更新失败')
+          }
+        }
+      })
+    },
+
+    // 修正分页参数处理
+    handlePageChange(val) {
+      if (typeof val === 'number') {
+        this.currentPage = val // 处理页码变化
+      } else {
+        this.pageSize = val // 处理每页数量变化
+      }
+      this.getNoticeList()
+    },
+
+    // 获取通知列表（修正分页参数）
     async getNoticeList() {
       this.loading = true
       try {
@@ -193,10 +280,7 @@ export default {
       this.loading = false
     },
 
-    handlePageChange(page) {
-      this.pageSize = size
-      this.getNoticeList()
-    },
+    // 其他原有方法保持不变
     handleAdd() {
       this.dialogType = 'add'
       this.noticeForm.id = ''
@@ -209,48 +293,6 @@ export default {
       this.dialogType = 'edit'
       Object.assign(this.noticeForm, row)
       this.dialogVisible = true
-    },
-    async handleDelete(row) {
-      try {
-        await MessageBox.confirm('确定要删除该通知吗？', '提示', {
-          type: 'warning'
-        });
-
-        // 修复 deleteNotice 参数传递（需确保 API 支持 id 参数）
-        const response = await noticeSettingApi.deleteNotice({ id: row.id })
-        if (response.data.success) {
-          Message.success('删除成功')
-          await this.getNoticeList()
-        }
-      } catch (error) {
-        if (error !== 'cancel') {
-          Message.error('删除失败')
-        }
-      }
-    },
-    handleSubmit() {
-      this.$refs.noticeFormRef.validate(async(valid) => {
-        if (valid) {
-          // 映射表单字段到 API 需要的参数格式
-          const formParams = {
-            name: this.noticeForm.target,
-            interval: this.noticeForm.status === '启用' ? '1' : '0',
-            type: this.noticeForm.type,
-            id: this.noticeForm.id // 保留 id 用于更新操作
-          }
-
-          try {
-            const response = await noticeSettingApi.addNotice(formParams)
-            if (response.data.success) {
-              Message.success(this.dialogType === 'add' ? '添加成功' : '更新成功')
-              this.dialogVisible = false
-              await this.getNoticeList()
-            }
-          } catch (error) {
-            Message.error(this.dialogType === 'add' ? '添加失败' : '更新失败')
-          }
-        }
-      });
     },
     toggleBatchMode() {
       this.isBatchMode = !this.isBatchMode
@@ -271,12 +313,10 @@ export default {
         Message.warning('请选择要删除的通知')
         return
       }
-
       try {
         await MessageBox.confirm(`确定要删除选中的 ${this.selectedItems.length} 条通知吗？`, '提示', {
           type: 'warning'
-        });
-
+        })
         const ids = this.selectedItems.map(item => item.id)
         const response = await noticeSettingApi.deleteNotice({ ids })
         if (response.data.success) {
@@ -298,9 +338,8 @@ export default {
               name: target,
               type: this.batchForm.type,
               interval: '1' // 默认启用状态
-            });
-          });
-
+            })
+          })
           try {
             await Promise.all(promises)
             Message.success('批量添加成功')
@@ -310,14 +349,16 @@ export default {
             Message.error('批量添加失败')
           }
         }
-      });
+      })
     }
   },
   mounted() {
     this.getNoticeList()
+    this.getRobotStatus() // 初始化机器人状态
   }
 }
 </script>
+
 
 <style scoped>
 .notice-management {
